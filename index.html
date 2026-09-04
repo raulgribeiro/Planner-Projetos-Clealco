@@ -468,21 +468,43 @@ function renderFases(){
   }).join('');
 }
 
-function aplicarTemaSalvo(){
-  const salvo = localStorage.getItem('tema_dashboard_projetos_pdca');
-  const claro = salvo === 'claro';
+const CHAVE_TEMA = 'tema_dashboard_projetos_pdca';
+
+function aplicarTema(claro){
   document.body.classList.toggle('light', claro);
   document.getElementById('themeIcon').textContent = claro ? '☀️' : '🌙';
   document.getElementById('themeLabel').textContent = claro ? 'Modo claro' : 'Modo escuro';
 }
 
+function aplicarTemaSalvo(){
+  const params = new URLSearchParams(window.location.search);
+  const temaUrl = params.get('theme');
+  let claro;
+  if(temaUrl === 'light') claro = true;
+  else if(temaUrl === 'dark') claro = false;
+  else claro = localStorage.getItem(CHAVE_TEMA) === 'claro';
+  aplicarTema(claro);
+}
+
 function toggleTheme(){
-  const claro = document.body.classList.toggle('light');
-  localStorage.setItem('tema_dashboard_projetos_pdca', claro ? 'claro' : 'escuro');
-  document.getElementById('themeIcon').textContent = claro ? '☀️' : '🌙';
-  document.getElementById('themeLabel').textContent = claro ? 'Modo claro' : 'Modo escuro';
+  const claro = !document.body.classList.contains('light');
+  localStorage.setItem(CHAVE_TEMA, claro ? 'claro' : 'escuro');
+  aplicarTema(claro);
   render();
 }
+
+// Sincronização de tema com o portal Opex (Clealco), quando este dashboard
+// está embutido nele via iframe: o portal manda postMessage ao carregar
+// e ao trocar o tema. Mesmo padrão usado no dashboard DTO.
+window.addEventListener('message', (event) => {
+  const dados = event.data;
+  if(dados && dados.type === 'SET_THEME' && (dados.theme === 'dark' || dados.theme === 'light')){
+    const claro = dados.theme === 'light';
+    localStorage.setItem(CHAVE_TEMA, claro ? 'claro' : 'escuro');
+    aplicarTema(claro);
+    render();
+  }
+});
 
 document.getElementById('lastUpdate').textContent = 'Atualizado em ' + new Date().toLocaleDateString('pt-BR');
 aplicarTemaSalvo();
