@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Dashboard Projetos PDCA</title>
+<title>Dashboard Projetos Green e Lean</title>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
 <style>
 :root{
@@ -76,7 +76,7 @@ body.light .filters input[type=date]{background:#fff;color-scheme:light;}
 <body>
 <header>
   <div>
-    <h1>Projetos PDCA</h1>
+    <h1>Projetos Green e Lean</h1>
     <div class="sub">% Concluído (real) vs % Esperado pelo cronograma — GreenBelt e Lean Manufacturing</div>
   </div>
   <div style="display:flex; align-items:center; gap:16px;">
@@ -92,6 +92,10 @@ body.light .filters input[type=date]{background:#fff;color-scheme:light;}
 
   <div class="filters">
     <div>
+      <label>Unidade</label>
+      <select id="fUnidade"><option value="">Todas</option></select>
+    </div>
+    <div>
       <label>Tipo de Projeto</label>
       <select id="fTipo"><option value="">Todos</option></select>
     </div>
@@ -103,11 +107,6 @@ body.light .filters input[type=date]{background:#fff;color-scheme:light;}
       <label>Status</label>
       <select id="fStatus"><option value="">Todos</option></select>
     </div>
-    <div>
-      <label>Data de referência ("hoje")</label>
-      <input type="date" id="fHoje">
-    </div>
-    <div class="hint">A linha vermelha da linha do tempo do Planner = data de referência. O % esperado é calculado por tempo decorrido / duração até essa data.</div>
     <button class="reset" onclick="resetFilters()">Limpar Filtros</button>
   </div>
 
@@ -152,7 +151,7 @@ body.light .filters input[type=date]{background:#fff;color-scheme:light;}
     <div class="card wide">
       <div class="table-scroll">
         <table id="tblProjetos">
-          <thead><tr><th>Projeto</th><th>Tipo</th><th>Responsável</th><th>Início</th><th>Conclusão</th><th>Duração (d)</th><th>Decorrido (d)</th><th>% Real</th><th>% Esperado</th><th>Diferença</th><th>Status</th></tr></thead>
+          <thead><tr><th>Projeto</th><th>Unidade</th><th>Tipo</th><th>Responsável</th><th>Início</th><th>Conclusão</th><th>Duração (d)</th><th>Decorrido (d)</th><th>% Real</th><th>% Esperado</th><th>Diferença</th><th>Status</th></tr></thead>
           <tbody></tbody>
         </table>
       </div>
@@ -177,8 +176,33 @@ const projetosClementina = [{"nome": "RITA - GREENBELT", "tipo": "GREENBELT", "r
 const projetosQueiroz = [{"nome": "VALDINEI - LEAN MANUFACTURING - ****GREEN***", "tipo": "LEAN MANUFACTURING", "responsavel": "VALDINEI", "inicio": "2026-07-22", "fim": "2026-11-30", "duracao": 94, "percReal": 17.0, "fases": [{"nome": "CONTRATO", "inicio": "2026-07-22", "fim": "2026-08-05", "duracao": 11, "percReal": 100.0, "tarefasTotal": 6, "tarefasConcluidas": 6}, {"nome": "PLANEJAR", "inicio": "2026-08-04", "fim": "2026-09-08", "duracao": 26, "percReal": 1.0, "tarefasTotal": 8, "tarefasConcluidas": 1}, {"nome": "EXECUTAR", "inicio": "2026-09-09", "fim": "2026-10-28", "duracao": 36, "percReal": 0.0, "tarefasTotal": 2, "tarefasConcluidas": 0}, {"nome": "CONTROLAR", "inicio": "2026-10-29", "fim": "2026-11-12", "duracao": 11, "percReal": 0.0, "tarefasTotal": 3, "tarefasConcluidas": 0}, {"nome": "AGIR", "inicio": "2026-07-22", "fim": "2026-11-30", "duracao": 94, "percReal": 0.0, "tarefasTotal": 2, "tarefasConcluidas": 0}]}, {"nome": "PASCON E OTÁVIO - LEAN MANUFACTURING", "tipo": "LEAN MANUFACTURING", "responsavel": "PASCON E OTÁVIO", "inicio": "2026-07-22", "fim": "2026-11-30", "duracao": 94, "percReal": 14.0, "fases": [{"nome": "CONTRATO", "inicio": "2026-07-22", "fim": "2026-08-05", "duracao": 11, "percReal": 83.0, "tarefasTotal": 6, "tarefasConcluidas": 5}, {"nome": "PLANEJAR", "inicio": "2026-08-04", "fim": "2026-09-08", "duracao": 26, "percReal": 1.0, "tarefasTotal": 8, "tarefasConcluidas": 1}, {"nome": "EXECUTAR", "inicio": "2026-09-09", "fim": "2026-10-28", "duracao": 36, "percReal": 0.0, "tarefasTotal": 2, "tarefasConcluidas": 0}, {"nome": "CONTROLAR", "inicio": "2026-10-29", "fim": "2026-11-12", "duracao": 11, "percReal": 0.0, "tarefasTotal": 3, "tarefasConcluidas": 0}, {"nome": "AGIR", "inicio": "2026-07-22", "fim": "2026-11-30", "duracao": 94, "percReal": 0.0, "tarefasTotal": 2, "tarefasConcluidas": 0}]}, {"nome": "DIOGO - LEAN MANUFACTURING", "tipo": "LEAN MANUFACTURING", "responsavel": "DIOGO", "inicio": "2026-07-22", "fim": "2026-11-30", "duracao": 94, "percReal": 17.0, "fases": [{"nome": "CONTRATO", "inicio": "2026-07-22", "fim": "2026-08-05", "duracao": 11, "percReal": 100.0, "tarefasTotal": 6, "tarefasConcluidas": 6}, {"nome": "PLANEJAR", "inicio": "2026-08-04", "fim": "2026-09-08", "duracao": 26, "percReal": 1.0, "tarefasTotal": 8, "tarefasConcluidas": 0}, {"nome": "EXECUTAR", "inicio": "2026-09-09", "fim": "2026-10-28", "duracao": 36, "percReal": 0.0, "tarefasTotal": 2, "tarefasConcluidas": 0}, {"nome": "CONTROLAR", "inicio": "2026-10-29", "fim": "2026-11-12", "duracao": 11, "percReal": 0.0, "tarefasTotal": 3, "tarefasConcluidas": 0}, {"nome": "AGIR", "inicio": "2026-07-22", "fim": "2026-11-30", "duracao": 94, "percReal": 0.0, "tarefasTotal": 2, "tarefasConcluidas": 0}]}, {"nome": "JOÃO MARCOS - LEAN MANUFACTURE - ***GREEN***", "tipo": "LEAN MANUFACTURING", "responsavel": "JOÃO MARCOS", "inicio": "2026-07-22", "fim": "2026-11-30", "duracao": 94, "percReal": 21.0, "fases": [{"nome": "CONTRATO", "inicio": "2026-07-22", "fim": "2026-08-05", "duracao": 11, "percReal": 100.0, "tarefasTotal": 6, "tarefasConcluidas": 6}, {"nome": "PLANEJAR", "inicio": "2026-08-04", "fim": "2026-09-08", "duracao": 26, "percReal": 6.0, "tarefasTotal": 8, "tarefasConcluidas": 1}, {"nome": "EXECUTAR", "inicio": "2026-09-09", "fim": "2026-10-28", "duracao": 36, "percReal": 0.0, "tarefasTotal": 2, "tarefasConcluidas": 0}, {"nome": "CONTROLAR", "inicio": "2026-10-29", "fim": "2026-11-12", "duracao": 11, "percReal": 0.0, "tarefasTotal": 3, "tarefasConcluidas": 0}, {"nome": "AGIR", "inicio": "2026-07-22", "fim": "2026-11-30", "duracao": 94, "percReal": 0.0, "tarefasTotal": 2, "tarefasConcluidas": 0}]}, {"nome": "BRUNO GINES - LEAN MANUFACTURE", "tipo": "LEAN MANUFACTURING", "responsavel": "BRUNO GINES", "inicio": "2026-07-22", "fim": "2026-11-30", "duracao": 94, "percReal": 14.0, "fases": [{"nome": "CONTRATO", "inicio": "2026-07-22", "fim": "2026-08-05", "duracao": 11, "percReal": 83.0, "tarefasTotal": 6, "tarefasConcluidas": 5}, {"nome": "PLANEJAR", "inicio": "2026-08-04", "fim": "2026-09-08", "duracao": 26, "percReal": 1.0, "tarefasTotal": 8, "tarefasConcluidas": 1}, {"nome": "EXECUTAR", "inicio": "2026-09-09", "fim": "2026-10-28", "duracao": 36, "percReal": 0.0, "tarefasTotal": 2, "tarefasConcluidas": 0}, {"nome": "CONTROLAR", "inicio": "2026-10-29", "fim": "2026-11-12", "duracao": 11, "percReal": 0.0, "tarefasTotal": 3, "tarefasConcluidas": 0}, {"nome": "AGIR", "inicio": "2026-07-22", "fim": "2026-11-30", "duracao": 94, "percReal": 0.0, "tarefasTotal": 2, "tarefasConcluidas": 0}]}, {"nome": "RODNELLIS - LEAN MANUFACTURING", "tipo": "LEAN MANUFACTURING", "responsavel": "RODNELLIS", "inicio": "2026-07-21", "fim": "2026-11-27", "duracao": 94, "percReal": 22.0, "fases": [{"nome": "CONTRATO", "inicio": "2026-07-21", "fim": "2026-08-04", "duracao": 11, "percReal": 83.0, "tarefasTotal": 6, "tarefasConcluidas": 5}, {"nome": "PLANEJAR", "inicio": "2026-08-04", "fim": "2026-09-08", "duracao": 26, "percReal": 8.0, "tarefasTotal": 7, "tarefasConcluidas": 1}, {"nome": "EXECUTAR", "inicio": "2026-09-09", "fim": "2026-10-28", "duracao": 36, "percReal": 0.0, "tarefasTotal": 2, "tarefasConcluidas": 0}, {"nome": "CONTROLAR", "inicio": "2026-10-29", "fim": "2026-11-12", "duracao": 11, "percReal": 0.0, "tarefasTotal": 3, "tarefasConcluidas": 0}, {"nome": "AGIR", "inicio": "2026-07-21", "fim": "2026-11-27", "duracao": 94, "percReal": 0.0, "tarefasTotal": 2, "tarefasConcluidas": 0}]}, {"nome": "EDSON BARROS - LEAN MANUFACTURING", "tipo": "LEAN MANUFACTURING", "responsavel": "EDSON BARROS", "inicio": "2026-07-22", "fim": "2026-11-30", "duracao": 94, "percReal": 14.0, "fases": [{"nome": "CONTRATO", "inicio": "2026-07-22", "fim": "2026-08-05", "duracao": 11, "percReal": 83.0, "tarefasTotal": 6, "tarefasConcluidas": 5}, {"nome": "PLANEJAR", "inicio": "2026-08-04", "fim": "2026-09-08", "duracao": 26, "percReal": 1.0, "tarefasTotal": 8, "tarefasConcluidas": 1}, {"nome": "EXECUTAR", "inicio": "2026-09-09", "fim": "2026-10-28", "duracao": 36, "percReal": 0.0, "tarefasTotal": 2, "tarefasConcluidas": 0}, {"nome": "CONTROLAR", "inicio": "2026-10-29", "fim": "2026-11-12", "duracao": 11, "percReal": 0.0, "tarefasTotal": 3, "tarefasConcluidas": 0}, {"nome": "AGIR", "inicio": "2026-07-22", "fim": "2026-11-30", "duracao": 94, "percReal": 0.0, "tarefasTotal": 2, "tarefasConcluidas": 0}]}, {"nome": "JOÃO MARCOS - GREENBELT", "tipo": "GREENBELT", "responsavel": "JOÃO MARCOS", "inicio": "2026-07-22", "fim": "2026-12-11", "duracao": 103, "percReal": 34.0, "fases": [{"nome": "DEFINIR", "inicio": "2026-07-22", "fim": "2026-08-05", "duracao": 11, "percReal": 100.0, "tarefasTotal": 6, "tarefasConcluidas": 6}, {"nome": "MEDIR", "inicio": "2026-08-05", "fim": "2026-09-30", "duracao": 41, "percReal": 23.0, "tarefasTotal": 9, "tarefasConcluidas": 3}, {"nome": "ANALISAR", "inicio": "2026-10-01", "fim": "2026-10-29", "duracao": 21, "percReal": 54.0, "tarefasTotal": 4, "tarefasConcluidas": 2}, {"nome": "IMPLEMENTAR", "inicio": "2026-10-13", "fim": "2026-11-30", "duracao": 35, "percReal": 0.0, "tarefasTotal": 3, "tarefasConcluidas": 0}, {"nome": "CONTROLAR", "inicio": "2026-11-30", "fim": "2026-12-11", "duracao": 10, "percReal": 0.0, "tarefasTotal": 3, "tarefasConcluidas": 0}]}, {"nome": "VALDINEI - GREENBELT", "tipo": "GREENBELT", "responsavel": "VALDINEI", "inicio": "2026-07-22", "fim": "2026-12-11", "duracao": 103, "percReal": 34.0, "fases": [{"nome": "DEFINIR", "inicio": "2026-07-22", "fim": "2026-08-05", "duracao": 11, "percReal": 100.0, "tarefasTotal": 6, "tarefasConcluidas": 6}, {"nome": "MEDIR", "inicio": "2026-08-05", "fim": "2026-09-30", "duracao": 41, "percReal": 23.0, "tarefasTotal": 9, "tarefasConcluidas": 3}, {"nome": "ANALISAR", "inicio": "2026-10-01", "fim": "2026-10-29", "duracao": 21, "percReal": 54.0, "tarefasTotal": 4, "tarefasConcluidas": 2}, {"nome": "IMPLEMENTAR", "inicio": "2026-10-13", "fim": "2026-11-30", "duracao": 35, "percReal": 0.0, "tarefasTotal": 3, "tarefasConcluidas": 0}, {"nome": "CONTROLAR", "inicio": "2026-11-30", "fim": "2026-12-11", "duracao": 10, "percReal": 0.0, "tarefasTotal": 3, "tarefasConcluidas": 0}]}];
 // ===DADOS_QUEIROZ_FIM===
 
-const UNIDADES = { "Clementina": projetosClementina, "Queiroz": projetosQueiroz };
-let unidadeAtual = Object.keys(UNIDADES).find(u => UNIDADES[u].length > 0) || "Clementina";
+// ===DADOS_MANUTENCAO_INDUSTRIAL_INICIO===
+const projetosManutencaoIndustrial = [{"nome": "CRISPIM - GREEN BELT", "tipo": "GREENBELT", "responsavel": "CRISPIM", "inicio": "2026-07-21", "fim": "2026-12-22", "duracao": 111, "percReal": 27.0, "fases": [{"nome": "DEFINIR", "inicio": "2026-07-21", "fim": "2026-08-04", "duracao": 11, "percReal": 100.0, "tarefasTotal": 6, "tarefasConcluidas": 6}, {"nome": "MEDIR", "inicio": "2026-08-05", "fim": "2026-09-23", "duracao": 36, "percReal": 0.0, "tarefasTotal": 9, "tarefasConcluidas": 0}, {"nome": "ANALISAR", "inicio": "2026-09-24", "fim": "2026-10-09", "duracao": 12, "percReal": 0.0, "tarefasTotal": 1, "tarefasConcluidas": 0}, {"nome": "IMPLEMENTAR", "inicio": "2026-10-13", "fim": "2026-12-07", "duracao": 40, "percReal": 0.0, "tarefasTotal": 3, "tarefasConcluidas": 0}, {"nome": "CONTROLAR", "inicio": "2026-12-08", "fim": "2026-12-22", "duracao": 11, "percReal": 0.0, "tarefasTotal": 3, "tarefasConcluidas": 0}]}, {"nome": "MARTELLI - GREEN BELT", "tipo": "GREENBELT", "responsavel": "MARTELLI", "inicio": "2026-07-21", "fim": "2026-12-22", "duracao": 111, "percReal": 9.0, "fases": [{"nome": "DEFINIR", "inicio": "2026-07-21", "fim": "2026-08-04", "duracao": 11, "percReal": 33.0, "tarefasTotal": 6, "tarefasConcluidas": 2}, {"nome": "MEDIR", "inicio": "2026-08-05", "fim": "2026-09-23", "duracao": 36, "percReal": 0.0, "tarefasTotal": 9, "tarefasConcluidas": 0}, {"nome": "ANALISAR", "inicio": "2026-09-24", "fim": "2026-10-09", "duracao": 12, "percReal": 0.0, "tarefasTotal": 1, "tarefasConcluidas": 0}, {"nome": "IMPLEMENTAR", "inicio": "2026-10-13", "fim": "2026-12-07", "duracao": 40, "percReal": 0.0, "tarefasTotal": 3, "tarefasConcluidas": 0}, {"nome": "CONTROLAR", "inicio": "2026-12-08", "fim": "2026-12-22", "duracao": 11, "percReal": 0.0, "tarefasTotal": 3, "tarefasConcluidas": 0}]}, {"nome": "CLÁUDIO JUNIOR - GREEN BELT", "tipo": "GREENBELT", "responsavel": "CLÁUDIO JUNIOR", "inicio": "2026-07-21", "fim": "2026-12-22", "duracao": 111, "percReal": 38.0, "fases": [{"nome": "DEFINIR", "inicio": "2026-07-21", "fim": "2026-08-04", "duracao": 11, "percReal": 100.0, "tarefasTotal": 6, "tarefasConcluidas": 6}, {"nome": "MEDIR", "inicio": "2026-08-05", "fim": "2026-09-23", "duracao": 36, "percReal": 32.0, "tarefasTotal": 9, "tarefasConcluidas": 4}, {"nome": "ANALISAR", "inicio": "2026-09-24", "fim": "2026-10-09", "duracao": 12, "percReal": 0.0, "tarefasTotal": 1, "tarefasConcluidas": 0}, {"nome": "IMPLEMENTAR", "inicio": "2026-10-13", "fim": "2026-12-07", "duracao": 40, "percReal": 0.0, "tarefasTotal": 3, "tarefasConcluidas": 0}, {"nome": "CONTROLAR", "inicio": "2026-07-21", "fim": "2026-12-22", "duracao": 111, "percReal": 0.0, "tarefasTotal": 3, "tarefasConcluidas": 0}]}, {"nome": "GABALDO/RANIEL - LEAN MANUFACTURING", "tipo": "LEAN MANUFACTURING", "responsavel": "GABALDO/RANIEL", "inicio": "2026-08-03", "fim": "2026-11-30", "duracao": 86, "percReal": 8.0, "fases": [{"nome": "CONTRATO", "inicio": "2026-08-03", "fim": "2026-08-17", "duracao": 11, "percReal": 50.0, "tarefasTotal": 6, "tarefasConcluidas": 3}, {"nome": "PLANEJAR", "inicio": "2026-08-17", "fim": "2026-09-30", "duracao": 33, "percReal": 0.0, "tarefasTotal": 7, "tarefasConcluidas": 0}, {"nome": "EXECUTAR", "inicio": "2026-09-30", "fim": "2026-11-13", "duracao": 33, "percReal": 0.0, "tarefasTotal": 2, "tarefasConcluidas": 0}, {"nome": "CONTROLAR", "inicio": "2026-11-13", "fim": "2026-11-27", "duracao": 11, "percReal": 0.0, "tarefasTotal": 3, "tarefasConcluidas": 0}, {"nome": "AGIR", "inicio": "2026-11-13", "fim": "2026-11-30", "duracao": 12, "percReal": 0.0, "tarefasTotal": 2, "tarefasConcluidas": 0}]}];
+// ===DADOS_MANUTENCAO_INDUSTRIAL_FIM===
+
+// ===DADOS_MANUTENCAO_AGRICOLA_INICIO===
+const projetosManutencaoAgricola = [{"nome": "FLAVIO - LEAN MANUFACTURING", "tipo": "LEAN MANUFACTURING", "responsavel": "FLAVIO", "inicio": "2026-08-03", "fim": "2026-11-30", "duracao": 86, "percReal": 13.0, "fases": [{"nome": "CONTRATO", "inicio": "2026-08-03", "fim": "2026-08-17", "duracao": 11, "percReal": 83.0, "tarefasTotal": 6, "tarefasConcluidas": 5}, {"nome": "PLANEJAR", "inicio": "2026-08-17", "fim": "2026-09-30", "duracao": 33, "percReal": 0.0, "tarefasTotal": 7, "tarefasConcluidas": 0}, {"nome": "EXECUTAR", "inicio": "2026-09-30", "fim": "2026-11-13", "duracao": 33, "percReal": 0.0, "tarefasTotal": 2, "tarefasConcluidas": 0}, {"nome": "CONTROLAR", "inicio": "2026-11-13", "fim": "2026-11-27", "duracao": 11, "percReal": 0.0, "tarefasTotal": 3, "tarefasConcluidas": 0}, {"nome": "AGIR", "inicio": "2026-11-13", "fim": "2026-11-30", "duracao": 12, "percReal": 0.0, "tarefasTotal": 2, "tarefasConcluidas": 0}]}, {"nome": "GILBERTO - LEAN MANUFACTURING", "tipo": "LEAN MANUFACTURING", "responsavel": "GILBERTO", "inicio": "2026-08-03", "fim": "2026-11-30", "duracao": 86, "percReal": 13.0, "fases": [{"nome": "CONTRATO", "inicio": "2026-08-03", "fim": "2026-08-17", "duracao": 11, "percReal": 83.0, "tarefasTotal": 6, "tarefasConcluidas": 5}, {"nome": "PLANEJAR", "inicio": "2026-08-17", "fim": "2026-09-30", "duracao": 33, "percReal": 0.0, "tarefasTotal": 7, "tarefasConcluidas": 0}, {"nome": "EXECUTAR", "inicio": "2026-09-30", "fim": "2026-11-13", "duracao": 33, "percReal": 0.0, "tarefasTotal": 2, "tarefasConcluidas": 0}, {"nome": "CONTROLAR", "inicio": "2026-11-13", "fim": "2026-11-27", "duracao": 11, "percReal": 0.0, "tarefasTotal": 3, "tarefasConcluidas": 0}, {"nome": "AGIR", "inicio": "2026-11-13", "fim": "2026-11-30", "duracao": 12, "percReal": 0.0, "tarefasTotal": 2, "tarefasConcluidas": 0}]}];
+// ===DADOS_MANUTENCAO_AGRICOLA_FIM===
+
+// Mescla as duas unidades num único array, marcando a unidade de origem
+// em cada projeto (ainda dá pra filtrar por unidade dentro da aba).
+const projetosIndustria = [
+  ...projetosClementina.map(p=>({...p, unidade:'Clementina'})),
+  ...projetosQueiroz.map(p=>({...p, unidade:'Queiroz'}))
+];
+
+// Abas por categoria — Indústria (Clementina + Queiroz mescladas),
+// Manutenção Industrial e Manutenção Agrícola. Uma futura aba "Agrícola"
+// entra aqui do mesmo jeito, como mais uma chave.
+const projetosManIndTab = projetosManutencaoIndustrial.map(p=>({...p, unidade:'Manutenção Industrial'}));
+const projetosManAgrTab = projetosManutencaoAgricola.map(p=>({...p, unidade:'Manutenção Agrícola'}));
+
+const UNIDADES = {
+  "Indústria": projetosIndustria,
+  "Manutenção Industrial": projetosManIndTab,
+  "Manutenção Agrícola": projetosManAgrTab
+};
+let unidadeAtual = Object.keys(UNIDADES).find(u => UNIDADES[u].length > 0) || "Indústria";
 
 const TOLERANCIA = 5; // pontos percentuais de tolerância para considerar "No Prazo"
 
@@ -207,7 +231,6 @@ function statusClasse(status){
 }
 
 const hojeISO = new Date().toISOString().slice(0,10);
-document.getElementById('fHoje').value = hojeISO;
 
 function renderUnitTabs(){
   const wrap = document.getElementById('unitTabs');
@@ -237,6 +260,7 @@ const fProjetoFase = document.getElementById('fProjetoFase');
 
 function popularSelects(){
   const dados = UNIDADES[unidadeAtual];
+  fillSelect('fUnidade', uniq(dados.map(r=>r.unidade)), 'Todas');
   fillSelect('fTipo', uniq(dados.map(r=>r.tipo)), 'Todos');
   fillSelect('fResp', uniq(dados.map(r=>r.responsavel)), 'Todos');
   fillSelect('fStatus', ['Adiantado','No Prazo','Atrasado'], 'Todos');
@@ -248,30 +272,31 @@ function popularSelects(){
   });
 }
 
-['fTipo','fResp','fStatus','fHoje'].forEach(id=>{
+['fUnidade','fTipo','fResp','fStatus'].forEach(id=>{
   document.getElementById(id).addEventListener('change', render);
 });
 fProjetoFase.addEventListener('change', renderFases);
 
 function resetFilters(){
-  ['fTipo','fResp','fStatus'].forEach(id=>document.getElementById(id).value='');
-  document.getElementById('fHoje').value = hojeISO;
+  ['fUnidade','fTipo','fResp','fStatus'].forEach(id=>document.getElementById(id).value='');
   fProjetoFase.value = 0;
   render();
 }
 
 function getFiltered(){
   const dados = UNIDADES[unidadeAtual];
+  const fU = document.getElementById('fUnidade').value;
   const fT = document.getElementById('fTipo').value;
   const fR = document.getElementById('fResp').value;
   const fS = document.getElementById('fStatus').value;
-  const hoje = document.getElementById('fHoje').value || hojeISO;
+  const hoje = hojeISO;
 
   return dados.map(p=>{
     const {decorridoDias, esperado} = calcEsperado(p.inicio, p.fim, hoje);
     const diff = Math.round((p.percReal - esperado)*10)/10;
     return {...p, decorridoDias, esperado, diff, status: statusDe(diff)};
   }).filter(p=>{
+    if(fU && p.unidade!==fU) return false;
     if(fT && p.tipo!==fT) return false;
     if(fR && p.responsavel!==fR) return false;
     if(fS && p.status!==fS) return false;
@@ -378,6 +403,7 @@ function render(){
     return `
     <tr>
       <td>${p.nome}</td>
+      <td>${p.unidade}</td>
       <td><span class="badge ${p.tipo==='GREENBELT'?'greenbelt':'lean'}">${p.tipo}</span></td>
       <td>${p.responsavel}</td>
       <td>${toDate(p.inicio).toLocaleDateString('pt-BR')}</td>
@@ -400,7 +426,7 @@ function renderFases(){
   const idx = parseInt(fProjetoFase.value || 0);
   const proj = dadosUnidade[idx];
   if(!proj) return;
-  const hoje = document.getElementById('fHoje').value || hojeISO;
+  const hoje = hojeISO;
   const tc = getThemeColors();
 
   document.getElementById('tituloFaseChart').textContent = `% Real vs % Esperado por Fase — ${proj.nome}`;
