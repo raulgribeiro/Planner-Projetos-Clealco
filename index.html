@@ -1,0 +1,468 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dashboard Projetos PDCA</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
+<style>
+:root{
+  --bg:#0f1720; --bg2:#131c26; --card:#17212b; --card2:#1c2733; --accent:#f7c948; --accent2:#0984e3;
+  --danger:#e74c3c; --warn:#f39c12; --good:#00b894; --text:#e8edf2; --muted:#8fa1b3; --border:#25333f;
+}
+*{box-sizing:border-box;}
+body{margin:0;font-family:'Segoe UI',Arial,sans-serif;background:linear-gradient(135deg,var(--bg),var(--bg2));color:var(--text);}
+header{padding:22px 32px;background:linear-gradient(90deg,#3d3308,#0f1720);border-bottom:2px solid var(--accent);display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px;}
+header h1{margin:0;font-size:24px;letter-spacing:.5px;}
+header .sub{color:var(--muted);font-size:13px;margin-top:4px;}
+.container{padding:24px 32px;}
+.unit-tabs{display:flex;gap:8px;margin-bottom:22px;}
+.unit-tab{background:var(--card);border:1px solid var(--border);color:var(--muted);padding:10px 22px;border-radius:10px;cursor:pointer;font-weight:600;font-size:14px;}
+.unit-tab.active{background:var(--accent);color:#2b2205;border-color:var(--accent);}
+.filters{display:flex;gap:14px;flex-wrap:wrap;margin-bottom:22px;background:var(--card);padding:16px 20px;border-radius:12px;border:1px solid var(--border);align-items:flex-end;}
+.filters label{display:block;font-size:11px;color:var(--muted);margin-bottom:5px;text-transform:uppercase;letter-spacing:.5px;}
+.filters select{background:var(--card2);color:var(--text);border:1px solid var(--border);border-radius:8px;padding:9px 12px;font-size:13px;min-width:170px;}
+.filters input[type=date]{background:var(--card2);color:var(--text);border:1px solid var(--border);border-radius:8px;padding:9px 12px;font-size:13px;color-scheme:dark;}
+.filters .reset{align-self:flex-end;background:var(--accent);color:#2b2205;border:none;border-radius:8px;padding:10px 18px;font-weight:700;cursor:pointer;font-size:13px;}
+.filters .reset:hover{filter:brightness(1.08);}
+.filters .hint{font-size:11px;color:var(--muted);max-width:230px;line-height:1.4;}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:16px;margin-bottom:24px;}
+.kpi{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:18px 20px;position:relative;overflow:hidden;}
+.kpi::before{content:'';position:absolute;top:0;left:0;width:4px;height:100%;background:var(--accent);}
+.kpi .val{font-size:26px;font-weight:700;}
+.kpi .lbl{color:var(--muted);font-size:12px;margin-top:4px;text-transform:uppercase;letter-spacing:.5px;}
+.kpi.warn::before{background:var(--warn);}
+.kpi.danger::before{background:var(--danger);}
+.kpi.blue::before{background:var(--accent2);}
+.kpi.good::before{background:var(--good);}
+.grid{display:grid;grid-template-columns:repeat(2,1fr);gap:18px;margin-bottom:20px;}
+.card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:18px 20px;}
+.card h3{margin:0 0 12px;font-size:15px;color:var(--text);border-left:3px solid var(--accent);padding-left:10px;}
+.card.wide{grid-column:span 2;}
+.chart-wrap{position:relative;height:300px;}
+.chart-wrap.tall{height:340px;}
+table{width:100%;border-collapse:collapse;font-size:12.5px;}
+th,td{padding:8px 10px;text-align:left;border-bottom:1px solid var(--border);}
+th{color:var(--muted);text-transform:uppercase;font-size:11px;letter-spacing:.4px;position:sticky;top:0;background:var(--card);}
+tbody tr:hover{background:var(--card2);}
+.badge{padding:3px 10px;border-radius:20px;font-size:11px;font-weight:600;white-space:nowrap;}
+.badge.adiantado{background:rgba(0,184,148,.18);color:#00e6b8;}
+.badge.noprazo{background:rgba(9,132,227,.18);color:#5cb8ff;}
+.badge.atrasado{background:rgba(231,76,60,.18);color:#ff8a7a;}
+.badge.greenbelt{background:rgba(247,201,72,.18);color:#f7c948;}
+.badge.lean{background:rgba(162,155,254,.18);color:#c8c3ff;}
+.table-scroll{max-height:380px;overflow-y:auto;}
+.section-title{margin:32px 0 14px;font-size:18px;color:var(--text);border-bottom:1px solid var(--border);padding-bottom:8px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;}
+.section-title select{background:var(--card2);color:var(--text);border:1px solid var(--border);border-radius:8px;padding:8px 12px;font-size:13px;}
+.diff-pos{color:#00e6b8;font-weight:700;}
+.diff-neg{color:#ff8a7a;font-weight:700;}
+.diff-zero{color:var(--muted);font-weight:700;}
+.mini{color:var(--muted);font-size:11.5px;}
+.empty-msg{color:var(--muted);font-size:13px;padding:24px;text-align:center;}
+@media(max-width:900px){.grid{grid-template-columns:1fr;}.card.wide{grid-column:span 1;}}
+
+body.light{
+  --bg:#fffbea; --bg2:#f4f6f8; --card:#ffffff; --card2:#faf6e4; --accent:#e6a800; --accent2:#0984e3;
+  --danger:#e74c3c; --warn:#e67e22; --good:#00997a; --text:#1b2733; --muted:#5f6f7f; --border:#eee0b0;
+}
+body.light header{background:linear-gradient(90deg,#FCCC0A,#fffbea 85%);border-bottom:2px solid #FCCC0A;}
+body.light .filters select, body.light .section-title select, body.light .unit-tab{background:#fff;}
+body.light .unit-tab.active{background:var(--accent);}
+body.light .filters input[type=date]{background:#fff;color-scheme:light;}
+.theme-toggle{background:var(--card2);border:1px solid var(--border);border-radius:20px;padding:8px 16px;color:var(--text);cursor:pointer;font-size:13px;font-weight:600;display:flex;align-items:center;gap:8px;}
+.theme-toggle:hover{border-color:var(--accent);}
+</style>
+</head>
+<body>
+<header>
+  <div>
+    <h1>Projetos PDCA</h1>
+    <div class="sub">% Concluído (real) vs % Esperado pelo cronograma — GreenBelt e Lean Manufacturing</div>
+  </div>
+  <div style="display:flex; align-items:center; gap:16px;">
+    <div class="sub" id="lastUpdate"></div>
+    <button class="theme-toggle" id="btnTheme" onclick="toggleTheme()">
+      <span id="themeIcon">🌙</span> <span id="themeLabel">Modo escuro</span>
+    </button>
+  </div>
+</header>
+
+<div class="container">
+  <div class="unit-tabs" id="unitTabs"></div>
+
+  <div class="filters">
+    <div>
+      <label>Tipo de Projeto</label>
+      <select id="fTipo"><option value="">Todos</option></select>
+    </div>
+    <div>
+      <label>Responsável</label>
+      <select id="fResp"><option value="">Todos</option></select>
+    </div>
+    <div>
+      <label>Status</label>
+      <select id="fStatus"><option value="">Todos</option></select>
+    </div>
+    <div>
+      <label>Data de referência ("hoje")</label>
+      <input type="date" id="fHoje">
+    </div>
+    <div class="hint">A linha vermelha da linha do tempo do Planner = data de referência. O % esperado é calculado por tempo decorrido / duração até essa data.</div>
+    <button class="reset" onclick="resetFilters()">Limpar Filtros</button>
+  </div>
+
+  <div class="kpis" id="kpiRow"></div>
+
+  <div id="mainContent">
+    <div class="grid">
+      <div class="card">
+        <h3>Status dos Projetos</h3>
+        <div class="chart-wrap"><canvas id="chartStatus"></canvas></div>
+      </div>
+      <div class="card">
+        <h3>Média Real vs Esperado por Tipo</h3>
+        <div class="chart-wrap"><canvas id="chartTipo"></canvas></div>
+      </div>
+      <div class="card wide">
+        <h3>% Concluído (Real) vs % Esperado por Projeto</h3>
+        <div class="chart-wrap tall"><canvas id="chartComparativo"></canvas></div>
+      </div>
+    </div>
+
+    <div class="section-title">
+      <span>Detalhamento por Fase (DMAIC / PDCA)</span>
+      <select id="fProjetoFase"></select>
+    </div>
+    <div class="grid">
+      <div class="card wide">
+        <h3 id="tituloFaseChart">% Real vs % Esperado por Fase</h3>
+        <div class="chart-wrap tall"><canvas id="chartFases"></canvas></div>
+      </div>
+    </div>
+    <div class="card wide" style="margin-bottom:20px;">
+      <div class="table-scroll">
+        <table id="tblFases">
+          <thead><tr><th>Fase</th><th>Início</th><th>Fim</th><th>Duração (d)</th><th>Decorrido (d)</th><th>% Real</th><th>% Esperado</th><th>Diferença</th><th>Status</th><th>Tarefas</th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="section-title">Detalhamento dos Projetos</div>
+    <div class="card wide">
+      <div class="table-scroll">
+        <table id="tblProjetos">
+          <thead><tr><th>Projeto</th><th>Tipo</th><th>Responsável</th><th>Início</th><th>Conclusão</th><th>Duração (d)</th><th>Decorrido (d)</th><th>% Real</th><th>% Esperado</th><th>Diferença</th><th>Status</th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+  <div class="empty-msg" id="emptyMsg" style="display:none;"></div>
+</div>
+
+<script>
+// ============================================================
+// DADOS POR UNIDADE
+// Estes blocos são reescritos automaticamente pelo
+// update_dashboard.py a cada exportação nova do Planner.
+// Não edite manualmente o conteúdo entre os marcadores.
+// ============================================================
+
+// ===DADOS_CLEMENTINA_INICIO===
+const projetosClementina = [{"nome": "RITA - GREENBELT", "tipo": "GREENBELT", "responsavel": "RITA", "inicio": "2026-07-22", "fim": "2026-12-11", "duracao": 103, "percReal": 38.0, "fases": [{"nome": "DEFINIR", "inicio": "2026-07-22", "fim": "2026-08-05", "duracao": 11, "percReal": 100.0, "tarefasTotal": 6, "tarefasConcluidas": 6}, {"nome": "MEDIR", "inicio": "2026-08-05", "fim": "2026-09-30", "duracao": 41, "percReal": 31.0, "tarefasTotal": 9, "tarefasConcluidas": 4}, {"nome": "ANALISAR", "inicio": "2026-10-01", "fim": "2026-10-29", "duracao": 21, "percReal": 54.0, "tarefasTotal": 4, "tarefasConcluidas": 2}, {"nome": "IMPLEMENTAR", "inicio": "2026-10-13", "fim": "2026-11-30", "duracao": 35, "percReal": 0.0, "tarefasTotal": 3, "tarefasConcluidas": 0}, {"nome": "CONTROLAR", "inicio": "2026-11-30", "fim": "2026-12-11", "duracao": 10, "percReal": 0.0, "tarefasTotal": 3, "tarefasConcluidas": 0}]}, {"nome": "KLEBER - GREENBELT", "tipo": "GREENBELT", "responsavel": "KLEBER", "inicio": "2026-07-21", "fim": "2026-12-10", "duracao": 103, "percReal": 13.0, "fases": [{"nome": "DEFINIR", "inicio": "2026-07-21", "fim": "2026-08-04", "duracao": 11, "percReal": 100.0, "tarefasTotal": 6, "tarefasConcluidas": 6}, {"nome": "MEDIR", "inicio": "2026-08-04", "fim": "2026-09-30", "duracao": 42, "percReal": 0.0, "tarefasTotal": 9, "tarefasConcluidas": 0}, {"nome": "ANALISAR", "inicio": "2026-09-30", "fim": "2026-10-21", "duracao": 16, "percReal": 0.0, "tarefasTotal": 4, "tarefasConcluidas": 0}, {"nome": "IMPLEMENTAR", "inicio": "2026-10-13", "fim": "2026-11-30", "duracao": 35, "percReal": 0.0, "tarefasTotal": 3, "tarefasConcluidas": 0}, {"nome": "CONTROLAR", "inicio": "2026-11-30", "fim": "2026-12-10", "duracao": 9, "percReal": 0.0, "tarefasTotal": 3, "tarefasConcluidas": 0}]}, {"nome": "JAQUELINE - GREENBELT", "tipo": "GREENBELT", "responsavel": "JAQUELINE", "inicio": "2026-07-21", "fim": "2026-12-11", "duracao": 104, "percReal": 15.0, "fases": [{"nome": "DEFINIR", "inicio": "2026-07-21", "fim": "2026-08-04", "duracao": 11, "percReal": 100.0, "tarefasTotal": 6, "tarefasConcluidas": 6}, {"nome": "MEDIR", "inicio": "2026-08-04", "fim": "2026-09-30", "duracao": 42, "percReal": 0.0, "tarefasTotal": 9, "tarefasConcluidas": 0}, {"nome": "ANALISAR", "inicio": "2026-09-30", "fim": "2026-10-20", "duracao": 15, "percReal": 0.0, "tarefasTotal": 1, "tarefasConcluidas": 0}, {"nome": "IMPLEMENTAR", "inicio": "2026-10-20", "fim": "2026-12-02", "duracao": 32, "percReal": 0.0, "tarefasTotal": 3, "tarefasConcluidas": 0}, {"nome": "CONTROLAR", "inicio": "2026-12-02", "fim": "2026-12-11", "duracao": 8, "percReal": 0.0, "tarefasTotal": 3, "tarefasConcluidas": 0}]}, {"nome": "AMANDA - LEAN MANUFACTURING", "tipo": "LEAN MANUFACTURING", "responsavel": "AMANDA", "inicio": "2026-07-22", "fim": "2026-11-30", "duracao": 94, "percReal": 24.0, "fases": [{"nome": "CONTRATO", "inicio": "2026-07-22", "fim": "2026-08-05", "duracao": 11, "percReal": 100.0, "tarefasTotal": 6, "tarefasConcluidas": 6}, {"nome": "PLANEJAR", "inicio": "2026-08-04", "fim": "2026-09-30", "duracao": 42, "percReal": 21.0, "tarefasTotal": 8, "tarefasConcluidas": 1}, {"nome": "EXECUTAR", "inicio": "2026-09-09", "fim": "2026-10-28", "duracao": 36, "percReal": 0.0, "tarefasTotal": 2, "tarefasConcluidas": 0}, {"nome": "CONTROLAR", "inicio": "2026-10-29", "fim": "2026-11-12", "duracao": 11, "percReal": 0.0, "tarefasTotal": 3, "tarefasConcluidas": 0}, {"nome": "AGIR", "inicio": "2026-07-22", "fim": "2026-11-30", "duracao": 94, "percReal": 0.0, "tarefasTotal": 2, "tarefasConcluidas": 0}]}, {"nome": "LUCIANO FURTADO - LEAN MANUFACTURE", "tipo": "LEAN MANUFACTURING", "responsavel": "LUCIANO FURTADO", "inicio": "2026-07-21", "fim": "2026-11-30", "duracao": 95, "percReal": 29.0, "fases": [{"nome": "CONTRATO", "inicio": "2026-07-21", "fim": "2026-08-04", "duracao": 11, "percReal": 100.0, "tarefasTotal": 6, "tarefasConcluidas": 6}, {"nome": "PLANEJAR", "inicio": "2026-08-04", "fim": "2026-09-30", "duracao": 42, "percReal": 17.0, "tarefasTotal": 7, "tarefasConcluidas": 2}, {"nome": "EXECUTAR", "inicio": "2026-09-09", "fim": "2026-10-28", "duracao": 36, "percReal": 9.0, "tarefasTotal": 2, "tarefasConcluidas": 0}, {"nome": "CONTROLAR", "inicio": "2026-10-29", "fim": "2026-11-12", "duracao": 11, "percReal": 0.0, "tarefasTotal": 3, "tarefasConcluidas": 0}, {"nome": "AGIR", "inicio": "2026-11-16", "fim": "2026-11-30", "duracao": 11, "percReal": 0.0, "tarefasTotal": 2, "tarefasConcluidas": 0}]}, {"nome": "HERES- LEAN MANUFACTURE", "tipo": "LEAN MANUFACTURING", "responsavel": "HERES", "inicio": "2026-07-21", "fim": "2026-11-30", "duracao": 95, "percReal": 54.0, "fases": [{"nome": "CONTRATO", "inicio": "2026-07-21", "fim": "2026-08-04", "duracao": 11, "percReal": 100.0, "tarefasTotal": 6, "tarefasConcluidas": 6}, {"nome": "PLANEJAR", "inicio": "2026-08-10", "fim": "2026-09-17", "duracao": 29, "percReal": 80.0, "tarefasTotal": 4, "tarefasConcluidas": 3}, {"nome": "EXECUTAR", "inicio": "2026-09-09", "fim": "2026-10-28", "duracao": 36, "percReal": 9.0, "tarefasTotal": 2, "tarefasConcluidas": 0}, {"nome": "CONTROLAR", "inicio": "2026-10-29", "fim": "2026-11-12", "duracao": 11, "percReal": 0.0, "tarefasTotal": 3, "tarefasConcluidas": 0}, {"nome": "AGIR", "inicio": "2026-11-16", "fim": "2026-11-30", "duracao": 11, "percReal": 0.0, "tarefasTotal": 2, "tarefasConcluidas": 0}]}];
+// ===DADOS_CLEMENTINA_FIM===
+
+// ===DADOS_QUEIROZ_INICIO===
+const projetosQueiroz = [{"nome": "VALDINEI - LEAN MANUFACTURING - ****GREEN***", "tipo": "LEAN MANUFACTURING", "responsavel": "VALDINEI", "inicio": "2026-07-22", "fim": "2026-11-30", "duracao": 94, "percReal": 17.0, "fases": [{"nome": "CONTRATO", "inicio": "2026-07-22", "fim": "2026-08-05", "duracao": 11, "percReal": 100.0, "tarefasTotal": 6, "tarefasConcluidas": 6}, {"nome": "PLANEJAR", "inicio": "2026-08-04", "fim": "2026-09-08", "duracao": 26, "percReal": 1.0, "tarefasTotal": 8, "tarefasConcluidas": 1}, {"nome": "EXECUTAR", "inicio": "2026-09-09", "fim": "2026-10-28", "duracao": 36, "percReal": 0.0, "tarefasTotal": 2, "tarefasConcluidas": 0}, {"nome": "CONTROLAR", "inicio": "2026-10-29", "fim": "2026-11-12", "duracao": 11, "percReal": 0.0, "tarefasTotal": 3, "tarefasConcluidas": 0}, {"nome": "AGIR", "inicio": "2026-07-22", "fim": "2026-11-30", "duracao": 94, "percReal": 0.0, "tarefasTotal": 2, "tarefasConcluidas": 0}]}, {"nome": "PASCON E OTÁVIO - LEAN MANUFACTURING", "tipo": "LEAN MANUFACTURING", "responsavel": "PASCON E OTÁVIO", "inicio": "2026-07-22", "fim": "2026-11-30", "duracao": 94, "percReal": 14.0, "fases": [{"nome": "CONTRATO", "inicio": "2026-07-22", "fim": "2026-08-05", "duracao": 11, "percReal": 83.0, "tarefasTotal": 6, "tarefasConcluidas": 5}, {"nome": "PLANEJAR", "inicio": "2026-08-04", "fim": "2026-09-08", "duracao": 26, "percReal": 1.0, "tarefasTotal": 8, "tarefasConcluidas": 1}, {"nome": "EXECUTAR", "inicio": "2026-09-09", "fim": "2026-10-28", "duracao": 36, "percReal": 0.0, "tarefasTotal": 2, "tarefasConcluidas": 0}, {"nome": "CONTROLAR", "inicio": "2026-10-29", "fim": "2026-11-12", "duracao": 11, "percReal": 0.0, "tarefasTotal": 3, "tarefasConcluidas": 0}, {"nome": "AGIR", "inicio": "2026-07-22", "fim": "2026-11-30", "duracao": 94, "percReal": 0.0, "tarefasTotal": 2, "tarefasConcluidas": 0}]}, {"nome": "DIOGO - LEAN MANUFACTURING", "tipo": "LEAN MANUFACTURING", "responsavel": "DIOGO", "inicio": "2026-07-22", "fim": "2026-11-30", "duracao": 94, "percReal": 17.0, "fases": [{"nome": "CONTRATO", "inicio": "2026-07-22", "fim": "2026-08-05", "duracao": 11, "percReal": 100.0, "tarefasTotal": 6, "tarefasConcluidas": 6}, {"nome": "PLANEJAR", "inicio": "2026-08-04", "fim": "2026-09-08", "duracao": 26, "percReal": 1.0, "tarefasTotal": 8, "tarefasConcluidas": 0}, {"nome": "EXECUTAR", "inicio": "2026-09-09", "fim": "2026-10-28", "duracao": 36, "percReal": 0.0, "tarefasTotal": 2, "tarefasConcluidas": 0}, {"nome": "CONTROLAR", "inicio": "2026-10-29", "fim": "2026-11-12", "duracao": 11, "percReal": 0.0, "tarefasTotal": 3, "tarefasConcluidas": 0}, {"nome": "AGIR", "inicio": "2026-07-22", "fim": "2026-11-30", "duracao": 94, "percReal": 0.0, "tarefasTotal": 2, "tarefasConcluidas": 0}]}, {"nome": "JOÃO MARCOS - LEAN MANUFACTURE - ***GREEN***", "tipo": "LEAN MANUFACTURING", "responsavel": "JOÃO MARCOS", "inicio": "2026-07-22", "fim": "2026-11-30", "duracao": 94, "percReal": 21.0, "fases": [{"nome": "CONTRATO", "inicio": "2026-07-22", "fim": "2026-08-05", "duracao": 11, "percReal": 100.0, "tarefasTotal": 6, "tarefasConcluidas": 6}, {"nome": "PLANEJAR", "inicio": "2026-08-04", "fim": "2026-09-08", "duracao": 26, "percReal": 6.0, "tarefasTotal": 8, "tarefasConcluidas": 1}, {"nome": "EXECUTAR", "inicio": "2026-09-09", "fim": "2026-10-28", "duracao": 36, "percReal": 0.0, "tarefasTotal": 2, "tarefasConcluidas": 0}, {"nome": "CONTROLAR", "inicio": "2026-10-29", "fim": "2026-11-12", "duracao": 11, "percReal": 0.0, "tarefasTotal": 3, "tarefasConcluidas": 0}, {"nome": "AGIR", "inicio": "2026-07-22", "fim": "2026-11-30", "duracao": 94, "percReal": 0.0, "tarefasTotal": 2, "tarefasConcluidas": 0}]}, {"nome": "BRUNO GINES - LEAN MANUFACTURE", "tipo": "LEAN MANUFACTURING", "responsavel": "BRUNO GINES", "inicio": "2026-07-22", "fim": "2026-11-30", "duracao": 94, "percReal": 14.0, "fases": [{"nome": "CONTRATO", "inicio": "2026-07-22", "fim": "2026-08-05", "duracao": 11, "percReal": 83.0, "tarefasTotal": 6, "tarefasConcluidas": 5}, {"nome": "PLANEJAR", "inicio": "2026-08-04", "fim": "2026-09-08", "duracao": 26, "percReal": 1.0, "tarefasTotal": 8, "tarefasConcluidas": 1}, {"nome": "EXECUTAR", "inicio": "2026-09-09", "fim": "2026-10-28", "duracao": 36, "percReal": 0.0, "tarefasTotal": 2, "tarefasConcluidas": 0}, {"nome": "CONTROLAR", "inicio": "2026-10-29", "fim": "2026-11-12", "duracao": 11, "percReal": 0.0, "tarefasTotal": 3, "tarefasConcluidas": 0}, {"nome": "AGIR", "inicio": "2026-07-22", "fim": "2026-11-30", "duracao": 94, "percReal": 0.0, "tarefasTotal": 2, "tarefasConcluidas": 0}]}, {"nome": "RODNELLIS - LEAN MANUFACTURING", "tipo": "LEAN MANUFACTURING", "responsavel": "RODNELLIS", "inicio": "2026-07-21", "fim": "2026-11-27", "duracao": 94, "percReal": 22.0, "fases": [{"nome": "CONTRATO", "inicio": "2026-07-21", "fim": "2026-08-04", "duracao": 11, "percReal": 83.0, "tarefasTotal": 6, "tarefasConcluidas": 5}, {"nome": "PLANEJAR", "inicio": "2026-08-04", "fim": "2026-09-08", "duracao": 26, "percReal": 8.0, "tarefasTotal": 7, "tarefasConcluidas": 1}, {"nome": "EXECUTAR", "inicio": "2026-09-09", "fim": "2026-10-28", "duracao": 36, "percReal": 0.0, "tarefasTotal": 2, "tarefasConcluidas": 0}, {"nome": "CONTROLAR", "inicio": "2026-10-29", "fim": "2026-11-12", "duracao": 11, "percReal": 0.0, "tarefasTotal": 3, "tarefasConcluidas": 0}, {"nome": "AGIR", "inicio": "2026-07-21", "fim": "2026-11-27", "duracao": 94, "percReal": 0.0, "tarefasTotal": 2, "tarefasConcluidas": 0}]}, {"nome": "EDSON BARROS - LEAN MANUFACTURING", "tipo": "LEAN MANUFACTURING", "responsavel": "EDSON BARROS", "inicio": "2026-07-22", "fim": "2026-11-30", "duracao": 94, "percReal": 14.0, "fases": [{"nome": "CONTRATO", "inicio": "2026-07-22", "fim": "2026-08-05", "duracao": 11, "percReal": 83.0, "tarefasTotal": 6, "tarefasConcluidas": 5}, {"nome": "PLANEJAR", "inicio": "2026-08-04", "fim": "2026-09-08", "duracao": 26, "percReal": 1.0, "tarefasTotal": 8, "tarefasConcluidas": 1}, {"nome": "EXECUTAR", "inicio": "2026-09-09", "fim": "2026-10-28", "duracao": 36, "percReal": 0.0, "tarefasTotal": 2, "tarefasConcluidas": 0}, {"nome": "CONTROLAR", "inicio": "2026-10-29", "fim": "2026-11-12", "duracao": 11, "percReal": 0.0, "tarefasTotal": 3, "tarefasConcluidas": 0}, {"nome": "AGIR", "inicio": "2026-07-22", "fim": "2026-11-30", "duracao": 94, "percReal": 0.0, "tarefasTotal": 2, "tarefasConcluidas": 0}]}, {"nome": "JOÃO MARCOS - GREENBELT", "tipo": "GREENBELT", "responsavel": "JOÃO MARCOS", "inicio": "2026-07-22", "fim": "2026-12-11", "duracao": 103, "percReal": 34.0, "fases": [{"nome": "DEFINIR", "inicio": "2026-07-22", "fim": "2026-08-05", "duracao": 11, "percReal": 100.0, "tarefasTotal": 6, "tarefasConcluidas": 6}, {"nome": "MEDIR", "inicio": "2026-08-05", "fim": "2026-09-30", "duracao": 41, "percReal": 23.0, "tarefasTotal": 9, "tarefasConcluidas": 3}, {"nome": "ANALISAR", "inicio": "2026-10-01", "fim": "2026-10-29", "duracao": 21, "percReal": 54.0, "tarefasTotal": 4, "tarefasConcluidas": 2}, {"nome": "IMPLEMENTAR", "inicio": "2026-10-13", "fim": "2026-11-30", "duracao": 35, "percReal": 0.0, "tarefasTotal": 3, "tarefasConcluidas": 0}, {"nome": "CONTROLAR", "inicio": "2026-11-30", "fim": "2026-12-11", "duracao": 10, "percReal": 0.0, "tarefasTotal": 3, "tarefasConcluidas": 0}]}, {"nome": "VALDINEI - GREENBELT", "tipo": "GREENBELT", "responsavel": "VALDINEI", "inicio": "2026-07-22", "fim": "2026-12-11", "duracao": 103, "percReal": 34.0, "fases": [{"nome": "DEFINIR", "inicio": "2026-07-22", "fim": "2026-08-05", "duracao": 11, "percReal": 100.0, "tarefasTotal": 6, "tarefasConcluidas": 6}, {"nome": "MEDIR", "inicio": "2026-08-05", "fim": "2026-09-30", "duracao": 41, "percReal": 23.0, "tarefasTotal": 9, "tarefasConcluidas": 3}, {"nome": "ANALISAR", "inicio": "2026-10-01", "fim": "2026-10-29", "duracao": 21, "percReal": 54.0, "tarefasTotal": 4, "tarefasConcluidas": 2}, {"nome": "IMPLEMENTAR", "inicio": "2026-10-13", "fim": "2026-11-30", "duracao": 35, "percReal": 0.0, "tarefasTotal": 3, "tarefasConcluidas": 0}, {"nome": "CONTROLAR", "inicio": "2026-11-30", "fim": "2026-12-11", "duracao": 10, "percReal": 0.0, "tarefasTotal": 3, "tarefasConcluidas": 0}]}];
+// ===DADOS_QUEIROZ_FIM===
+
+const UNIDADES = { "Clementina": projetosClementina, "Queiroz": projetosQueiroz };
+let unidadeAtual = Object.keys(UNIDADES).find(u => UNIDADES[u].length > 0) || "Clementina";
+
+const TOLERANCIA = 5; // pontos percentuais de tolerância para considerar "No Prazo"
+
+function toDate(s){ return new Date(s+"T00:00:00"); }
+
+function calcEsperado(inicioStr, fimStr, hojeStr){
+  const ini = toDate(inicioStr), fim = toDate(fimStr), hoje = toDate(hojeStr);
+  const totalMs = fim - ini;
+  let decorridoMs = hoje - ini;
+  if(decorridoMs < 0) decorridoMs = 0;
+  if(decorridoMs > totalMs) decorridoMs = Math.max(totalMs,0);
+  const decorridoDias = Math.round(decorridoMs / 86400000);
+  const esperado = totalMs > 0 ? (decorridoMs / totalMs) * 100 : 0;
+  return {decorridoDias, esperado: Math.round(esperado*10)/10};
+}
+
+function statusDe(diff){
+  if(diff >= TOLERANCIA) return "Adiantado";
+  if(diff <= -TOLERANCIA) return "Atrasado";
+  return "No Prazo";
+}
+function statusClasse(status){
+  if(status==="Adiantado") return "adiantado";
+  if(status==="Atrasado") return "atrasado";
+  return "noprazo";
+}
+
+const hojeISO = new Date().toISOString().slice(0,10);
+document.getElementById('fHoje').value = hojeISO;
+
+function renderUnitTabs(){
+  const wrap = document.getElementById('unitTabs');
+  wrap.innerHTML = Object.keys(UNIDADES).map(u=>
+    `<button class="unit-tab ${u===unidadeAtual?'active':''}" onclick="trocarUnidade('${u}')">${u}</button>`
+  ).join('');
+}
+
+function trocarUnidade(u){
+  unidadeAtual = u;
+  renderUnitTabs();
+  popularSelects();
+  render();
+}
+
+function uniq(arr){return [...new Set(arr.filter(v=>v!==null && v!==undefined && v!==''))].sort();}
+function fillSelect(id, values, placeholder){
+  const sel = document.getElementById(id);
+  sel.innerHTML = `<option value="">${placeholder}</option>`;
+  values.forEach(v=>{
+    const o = document.createElement('option');
+    o.value=v; o.textContent=v; sel.appendChild(o);
+  });
+}
+
+const fProjetoFase = document.getElementById('fProjetoFase');
+
+function popularSelects(){
+  const dados = UNIDADES[unidadeAtual];
+  fillSelect('fTipo', uniq(dados.map(r=>r.tipo)), 'Todos');
+  fillSelect('fResp', uniq(dados.map(r=>r.responsavel)), 'Todos');
+  fillSelect('fStatus', ['Adiantado','No Prazo','Atrasado'], 'Todos');
+  fProjetoFase.innerHTML = '';
+  dados.forEach((p,i)=>{
+    const o = document.createElement('option');
+    o.value = i; o.textContent = p.nome;
+    fProjetoFase.appendChild(o);
+  });
+}
+
+['fTipo','fResp','fStatus','fHoje'].forEach(id=>{
+  document.getElementById(id).addEventListener('change', render);
+});
+fProjetoFase.addEventListener('change', renderFases);
+
+function resetFilters(){
+  ['fTipo','fResp','fStatus'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('fHoje').value = hojeISO;
+  fProjetoFase.value = 0;
+  render();
+}
+
+function getFiltered(){
+  const dados = UNIDADES[unidadeAtual];
+  const fT = document.getElementById('fTipo').value;
+  const fR = document.getElementById('fResp').value;
+  const fS = document.getElementById('fStatus').value;
+  const hoje = document.getElementById('fHoje').value || hojeISO;
+
+  return dados.map(p=>{
+    const {decorridoDias, esperado} = calcEsperado(p.inicio, p.fim, hoje);
+    const diff = Math.round((p.percReal - esperado)*10)/10;
+    return {...p, decorridoDias, esperado, diff, status: statusDe(diff)};
+  }).filter(p=>{
+    if(fT && p.tipo!==fT) return false;
+    if(fR && p.responsavel!==fR) return false;
+    if(fS && p.status!==fS) return false;
+    return true;
+  });
+}
+
+const charts = {};
+function destroyChart(key){ if(charts[key]){ charts[key].destroy(); delete charts[key]; } }
+
+function getThemeColors(){
+  const light = document.body.classList.contains('light');
+  return {
+    text: light ? '#1b2733' : '#e8edf2',
+    grid: light ? '#eee0b0' : '#25333f',
+    border: light ? '#eee0b0' : '#25333f'
+  };
+}
+
+const corReal = '#0984e3';
+const corEsperado = '#f7c948';
+const corStatus = {Adiantado:'#00b894', 'No Prazo':'#0984e3', Atrasado:'#e74c3c'};
+
+function render(){
+  const dadosUnidade = UNIDADES[unidadeAtual];
+  const emptyMsg = document.getElementById('emptyMsg');
+  const mainContent = document.getElementById('mainContent');
+
+  if(!dadosUnidade || dadosUnidade.length === 0){
+    document.getElementById('kpiRow').innerHTML = '';
+    mainContent.style.display = 'none';
+    emptyMsg.style.display = 'block';
+    emptyMsg.textContent = `Nenhum dado carregado ainda para ${unidadeAtual}. Assim que o Excel dessa unidade for exportado e o script de atualização rodar, o dashboard aparece aqui.`;
+    return;
+  }
+  mainContent.style.display = 'block';
+  emptyMsg.style.display = 'none';
+
+  const filtered = getFiltered();
+  const tc = getThemeColors();
+
+  const total = filtered.length;
+  const mediaReal = total ? (filtered.reduce((s,p)=>s+p.percReal,0)/total) : 0;
+  const mediaEsperado = total ? (filtered.reduce((s,p)=>s+p.esperado,0)/total) : 0;
+  const nAdiantado = filtered.filter(p=>p.status==='Adiantado').length;
+  const nNoPrazo = filtered.filter(p=>p.status==='No Prazo').length;
+  const nAtrasado = filtered.filter(p=>p.status==='Atrasado').length;
+  const piorDiff = total ? Math.min(...filtered.map(p=>p.diff)) : 0;
+
+  document.getElementById('kpiRow').innerHTML = `
+    <div class="kpi blue"><div class="val">${total}</div><div class="lbl">Projetos</div></div>
+    <div class="kpi"><div class="val">${mediaReal.toFixed(1)}%</div><div class="lbl">Média % Real</div></div>
+    <div class="kpi"><div class="val">${mediaEsperado.toFixed(1)}%</div><div class="lbl">Média % Esperado</div></div>
+    <div class="kpi good"><div class="val">${nAdiantado}</div><div class="lbl">Adiantados</div></div>
+    <div class="kpi blue"><div class="val">${nNoPrazo}</div><div class="lbl">No Prazo</div></div>
+    <div class="kpi danger"><div class="val">${nAtrasado}</div><div class="lbl">Atrasados</div></div>
+    <div class="kpi warn"><div class="val">${piorDiff.toFixed(1)} pp</div><div class="lbl">Maior Atraso (pp)</div></div>
+  `;
+
+  destroyChart('status');
+  charts.status = new Chart(document.getElementById('chartStatus'), {
+    type:'doughnut',
+    data:{labels:['Adiantado','No Prazo','Atrasado'], datasets:[{data:[nAdiantado,nNoPrazo,nAtrasado], backgroundColor:[corStatus.Adiantado, corStatus['No Prazo'], corStatus.Atrasado], borderColor:tc.border, borderWidth:2}]},
+    options:{plugins:{legend:{position:'right', labels:{color:tc.text}}}, responsive:true, maintainAspectRatio:false, cutout:'60%'}
+  });
+
+  const tipos = uniq(filtered.map(p=>p.tipo));
+  const mediaRealTipo = tipos.map(t=>{
+    const arr = filtered.filter(p=>p.tipo===t);
+    return arr.length ? arr.reduce((s,p)=>s+p.percReal,0)/arr.length : 0;
+  });
+  const mediaEspTipo = tipos.map(t=>{
+    const arr = filtered.filter(p=>p.tipo===t);
+    return arr.length ? arr.reduce((s,p)=>s+p.esperado,0)/arr.length : 0;
+  });
+  destroyChart('tipo');
+  charts.tipo = new Chart(document.getElementById('chartTipo'), {
+    type:'bar',
+    data:{labels:tipos, datasets:[
+      {label:'% Real', data:mediaRealTipo, backgroundColor:corReal, borderRadius:6},
+      {label:'% Esperado', data:mediaEspTipo, backgroundColor:corEsperado, borderRadius:6}
+    ]},
+    options:{plugins:{legend:{labels:{color:tc.text}}}, responsive:true, maintainAspectRatio:false,
+      scales:{x:{ticks:{color:tc.text}, grid:{display:false}}, y:{ticks:{color:tc.text}, grid:{color:tc.grid}, beginAtZero:true, max:100}}}
+  });
+
+  const nomesCurtos = filtered.map(p=>p.nome.length>32?p.nome.slice(0,30)+'…':p.nome);
+  destroyChart('comparativo');
+  charts.comparativo = new Chart(document.getElementById('chartComparativo'), {
+    type:'bar',
+    data:{labels:nomesCurtos, datasets:[
+      {label:'% Real', data:filtered.map(p=>p.percReal), backgroundColor:corReal, borderRadius:6},
+      {label:'% Esperado', data:filtered.map(p=>p.esperado), backgroundColor:corEsperado, borderRadius:6}
+    ]},
+    options:{indexAxis:'y', plugins:{legend:{labels:{color:tc.text}}}, responsive:true, maintainAspectRatio:false,
+      scales:{x:{ticks:{color:tc.text}, grid:{color:tc.grid}, beginAtZero:true, max:100}, y:{ticks:{color:tc.text}, grid:{display:false}}}}
+  });
+
+  const sorted = [...filtered].sort((a,b)=>a.diff-b.diff);
+  const tb = document.querySelector('#tblProjetos tbody');
+  tb.innerHTML = sorted.map(p=>{
+    const diffTxt = (p.diff>0?'+':'') + p.diff.toFixed(1) + ' pp';
+    const diffClasse = p.diff>0.4 ? 'diff-pos' : (p.diff<-0.4 ? 'diff-neg' : 'diff-zero');
+    return `
+    <tr>
+      <td>${p.nome}</td>
+      <td><span class="badge ${p.tipo==='GREENBELT'?'greenbelt':'lean'}">${p.tipo}</span></td>
+      <td>${p.responsavel}</td>
+      <td>${toDate(p.inicio).toLocaleDateString('pt-BR')}</td>
+      <td>${toDate(p.fim).toLocaleDateString('pt-BR')}</td>
+      <td>${p.duracao}</td>
+      <td>${p.decorridoDias}</td>
+      <td>${p.percReal}%</td>
+      <td>${p.esperado.toFixed(1)}%</td>
+      <td class="${diffClasse}">${diffTxt}</td>
+      <td><span class="badge ${statusClasse(p.status)}">${p.status}</span></td>
+    </tr>`;
+  }).join('');
+
+  renderFases();
+}
+
+function renderFases(){
+  const dadosUnidade = UNIDADES[unidadeAtual];
+  if(!dadosUnidade || dadosUnidade.length === 0) return;
+  const idx = parseInt(fProjetoFase.value || 0);
+  const proj = dadosUnidade[idx];
+  if(!proj) return;
+  const hoje = document.getElementById('fHoje').value || hojeISO;
+  const tc = getThemeColors();
+
+  document.getElementById('tituloFaseChart').textContent = `% Real vs % Esperado por Fase — ${proj.nome}`;
+
+  const fases = proj.fases.map(f=>{
+    const {decorridoDias, esperado} = calcEsperado(f.inicio, f.fim, hoje);
+    const diff = Math.round((f.percReal - esperado)*10)/10;
+    return {...f, decorridoDias, esperado, diff, status: statusDe(diff)};
+  });
+
+  destroyChart('fases');
+  charts.fases = new Chart(document.getElementById('chartFases'), {
+    type:'bar',
+    data:{labels:fases.map(f=>f.nome), datasets:[
+      {label:'% Real', data:fases.map(f=>f.percReal), backgroundColor:corReal, borderRadius:6},
+      {label:'% Esperado', data:fases.map(f=>f.esperado), backgroundColor:corEsperado, borderRadius:6}
+    ]},
+    options:{indexAxis:'y', plugins:{legend:{labels:{color:tc.text}}}, responsive:true, maintainAspectRatio:false,
+      scales:{x:{ticks:{color:tc.text}, grid:{color:tc.grid}, beginAtZero:true, max:100}, y:{ticks:{color:tc.text}, grid:{display:false}}}}
+  });
+
+  const tb = document.querySelector('#tblFases tbody');
+  tb.innerHTML = fases.map(f=>{
+    const diffTxt = (f.diff>0?'+':'') + f.diff.toFixed(1) + ' pp';
+    const diffClasse = f.diff>0.4 ? 'diff-pos' : (f.diff<-0.4 ? 'diff-neg' : 'diff-zero');
+    return `
+    <tr>
+      <td>${f.nome}</td>
+      <td>${toDate(f.inicio).toLocaleDateString('pt-BR')}</td>
+      <td>${toDate(f.fim).toLocaleDateString('pt-BR')}</td>
+      <td>${f.duracao}</td>
+      <td>${f.decorridoDias}</td>
+      <td>${f.percReal}%</td>
+      <td>${f.esperado.toFixed(1)}%</td>
+      <td class="${diffClasse}">${diffTxt}</td>
+      <td><span class="badge ${statusClasse(f.status)}">${f.status}</span></td>
+      <td class="mini">${f.tarefasConcluidas}/${f.tarefasTotal} tarefas</td>
+    </tr>`;
+  }).join('');
+}
+
+function aplicarTemaSalvo(){
+  const salvo = localStorage.getItem('tema_dashboard_projetos_pdca');
+  const claro = salvo === 'claro';
+  document.body.classList.toggle('light', claro);
+  document.getElementById('themeIcon').textContent = claro ? '☀️' : '🌙';
+  document.getElementById('themeLabel').textContent = claro ? 'Modo claro' : 'Modo escuro';
+}
+
+function toggleTheme(){
+  const claro = document.body.classList.toggle('light');
+  localStorage.setItem('tema_dashboard_projetos_pdca', claro ? 'claro' : 'escuro');
+  document.getElementById('themeIcon').textContent = claro ? '☀️' : '🌙';
+  document.getElementById('themeLabel').textContent = claro ? 'Modo claro' : 'Modo escuro';
+  render();
+}
+
+document.getElementById('lastUpdate').textContent = 'Atualizado em ' + new Date().toLocaleDateString('pt-BR');
+aplicarTemaSalvo();
+renderUnitTabs();
+popularSelects();
+render();
+</script>
+</body>
+</html>
