@@ -12,6 +12,13 @@
 }
 *{box-sizing:border-box;}
 body{margin:0;font-family:'Segoe UI',Arial,sans-serif;background:linear-gradient(135deg,var(--bg),var(--bg2));color:var(--text);}
+.app-layout{display:flex;min-height:100vh;}
+.sidebar{width:230px;flex-shrink:0;background:var(--card);border-right:1px solid var(--border);padding:24px 16px;display:flex;flex-direction:column;gap:8px;}
+.sidebar-title{color:var(--muted);font-size:11px;text-transform:uppercase;letter-spacing:.6px;margin:0 0 6px 6px;}
+.sidebar-btn{display:flex;align-items:center;gap:10px;background:transparent;border:1px solid transparent;color:var(--text);padding:12px 14px;border-radius:10px;cursor:pointer;font-weight:600;font-size:14px;text-align:left;width:100%;}
+.sidebar-btn:hover{background:var(--card2);}
+.sidebar-btn.active{background:var(--accent);color:#2b2205;}
+.main-area{flex:1;min-width:0;}
 header{padding:22px 32px;background:linear-gradient(90deg,#3d3308,#0f1720);border-bottom:2px solid var(--accent);display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px;}
 header h1{margin:0;font-size:24px;letter-spacing:.5px;}
 header .sub{color:var(--muted);font-size:13px;margin-top:4px;}
@@ -66,6 +73,8 @@ body.light{
   --danger:#e74c3c; --warn:#e67e22; --good:#00997a; --text:#1b2733; --muted:#5f6f7f; --border:#eee0b0;
 }
 body.light header{background:linear-gradient(90deg,#FCCC0A,#fffbea 85%);border-bottom:2px solid #FCCC0A;}
+body.light .sidebar{background:#fff;}
+body.light .sidebar-btn.active{background:var(--accent);}
 body.light .filters select, body.light .section-title select, body.light .unit-tab{background:#fff;}
 body.light .unit-tab.active{background:var(--accent);}
 body.light .filters input[type=date]{background:#fff;color-scheme:light;}
@@ -74,10 +83,16 @@ body.light .filters input[type=date]{background:#fff;color-scheme:light;}
 </style>
 </head>
 <body>
+<div class="app-layout">
+  <nav class="sidebar">
+    <div class="sidebar-title">Cronograma dos Projetos</div>
+    <div id="sidebarNav"></div>
+  </nav>
+  <div class="main-area">
 <header>
   <div>
-    <h1>Projetos Green e Lean</h1>
-    <div class="sub">% Concluído (real) vs % Esperado pelo cronograma — GreenBelt e Lean Manufacturing</div>
+    <h1 id="tituloMetodologia">Projetos Green e Lean</h1>
+    <div class="sub" id="subtituloMetodologia">% Concluído (real) vs % Esperado pelo cronograma — GreenBelt e Lean Manufacturing</div>
   </div>
   <div style="display:flex; align-items:center; gap:16px;">
     <div class="sub" id="lastUpdate"></div>
@@ -129,7 +144,7 @@ body.light .filters input[type=date]{background:#fff;color-scheme:light;}
     </div>
 
     <div class="section-title">
-      <span>Detalhamento por Fase (DMAIC / PDCA)</span>
+      <span id="tituloSecaoFases">Detalhamento por Fase (DMAIC / PDCA)</span>
       <select id="fProjetoFase"></select>
     </div>
     <div class="grid">
@@ -141,7 +156,7 @@ body.light .filters input[type=date]{background:#fff;color-scheme:light;}
     <div class="card wide" style="margin-bottom:20px;">
       <div class="table-scroll">
         <table id="tblFases">
-          <thead><tr><th>Fase</th><th>Início</th><th>Fim</th><th>Duração (d)</th><th>Decorrido (d)</th><th>% Real</th><th>% Esperado</th><th>Diferença</th><th>Status</th><th>Tarefas</th></tr></thead>
+          <thead><tr><th id="colunaFase">Fase</th><th>Início</th><th>Fim</th><th>Duração (d)</th><th>Decorrido (d)</th><th>% Real</th><th>% Esperado</th><th>Diferença</th><th>Status</th><th>Tarefas</th></tr></thead>
           <tbody></tbody>
         </table>
       </div>
@@ -158,6 +173,8 @@ body.light .filters input[type=date]{background:#fff;color-scheme:light;}
     </div>
   </div>
   <div class="empty-msg" id="emptyMsg" style="display:none;"></div>
+</div>
+  </div>
 </div>
 
 <script>
@@ -188,26 +205,75 @@ const projetosManutencaoAgricola = [{"nome": "GILBERTO - LEAN MANUFACTURING", "t
 const projetosAgricola = [{"nome": "COLHEITA - ELIMINAR SUPERDIMENSIONAMENTO DE ESTRUTURA EM ÁREAS CRÍTICAS (Márcio e Ulian)", "tipo": "LEAN MANUFACTURING", "responsavel": "COLHEITA", "inicio": "2026-08-20", "fim": "2026-12-15", "duracao": 84, "percReal": 8.0, "fases": [{"nome": "CONTRATO", "inicio": "2026-08-20", "fim": "2026-08-31", "duracao": 8, "percReal": 67.0, "tarefasTotal": 6, "tarefasConcluidas": 4}, {"nome": "PLANEJAR", "inicio": "2026-08-20", "fim": "2026-10-09", "duracao": 37, "percReal": 0.0, "tarefasTotal": 7, "tarefasConcluidas": 0}, {"nome": "EXECUTAR", "inicio": "2026-10-12", "fim": "2026-11-20", "duracao": 30, "percReal": 0.0, "tarefasTotal": 2, "tarefasConcluidas": 0}, {"nome": "AGIR", "inicio": "2026-11-23", "fim": "2026-12-15", "duracao": 17, "percReal": 0.0, "tarefasTotal": 2, "tarefasConcluidas": 0}]}, {"nome": "TRANSPORTE - REDUZIR CONSUMO DE DIESEL COM ROTATÓRIA ALTERNATIVA (Eduardo e Danilo)", "tipo": "LEAN MANUFACTURING", "responsavel": "TRANSPORTE", "inicio": "2026-07-27", "fim": "2026-12-15", "duracao": 102, "percReal": 48.0, "fases": [{"nome": "CONTRATO", "inicio": "2026-08-20", "fim": "2026-08-31", "duracao": 8, "percReal": 83.0, "tarefasTotal": 6, "tarefasConcluidas": 5}, {"nome": "PLANEJAR", "inicio": "2026-07-31", "fim": "2026-10-09", "duracao": 51, "percReal": 62.0, "tarefasTotal": 8, "tarefasConcluidas": 5}, {"nome": "EXECUTAR", "inicio": "2026-07-27", "fim": "2026-11-20", "duracao": 85, "percReal": 29.0, "tarefasTotal": 4, "tarefasConcluidas": 2}, {"nome": "AGIR", "inicio": "2026-11-23", "fim": "2026-12-15", "duracao": 17, "percReal": 0.0, "tarefasTotal": 2, "tarefasConcluidas": 0}]}, {"nome": "TRANSPORTE - ELIMINAR VIAGENS EXTRAS NA TROCA DE ÁREA (Eduardo e Danilo)", "tipo": "LEAN MANUFACTURING", "responsavel": "TRANSPORTE", "inicio": "2026-07-31", "fim": "2026-12-15", "duracao": 98, "percReal": 35.0, "fases": [{"nome": "CONTRATO", "inicio": "2026-07-31", "fim": "2026-08-31", "duracao": 22, "percReal": 88.0, "tarefasTotal": 7, "tarefasConcluidas": 6}, {"nome": "PLANEJAR", "inicio": "2026-08-13", "fim": "2026-10-09", "duracao": 42, "percReal": 40.0, "tarefasTotal": 9, "tarefasConcluidas": 4}, {"nome": "EXECUTAR", "inicio": "2026-10-12", "fim": "2026-11-20", "duracao": 30, "percReal": 0.0, "tarefasTotal": 2, "tarefasConcluidas": 0}, {"nome": "AGIR", "inicio": "2026-11-23", "fim": "2026-12-15", "duracao": 17, "percReal": 0.0, "tarefasTotal": 2, "tarefasConcluidas": 0}]}, {"nome": "TRANSPORTE - ELIMINAR DESLOCAMENTOS IMPRODUTIVOS NO BATE-VOLTA (Eduardo e Danilo)", "tipo": "LEAN MANUFACTURING", "responsavel": "TRANSPORTE", "inicio": "2026-07-30", "fim": "2026-12-15", "duracao": 99, "percReal": 48.0, "fases": [{"nome": "CONTRATO", "inicio": "2026-07-30", "fim": "2026-08-31", "duracao": 23, "percReal": 75.0, "tarefasTotal": 7, "tarefasConcluidas": 6}, {"nome": "PLANEJAR", "inicio": "2026-07-30", "fim": "2026-10-09", "duracao": 52, "percReal": 65.0, "tarefasTotal": 9, "tarefasConcluidas": 6}, {"nome": "EXECUTAR", "inicio": "2026-10-12", "fim": "2026-11-20", "duracao": 30, "percReal": 0.0, "tarefasTotal": 2, "tarefasConcluidas": 0}, {"nome": "AGIR", "inicio": "2026-11-23", "fim": "2026-12-15", "duracao": 17, "percReal": 0.0, "tarefasTotal": 2, "tarefasConcluidas": 0}]}, {"nome": "TRATOS CULTURAIS - REDUÇÃO DE TEMPO IMPRODUTIVO DA APLICAÇÃO DE VINHAÇA LOCALIZADA  (Altair e Bruno)", "tipo": "LEAN MANUFACTURING", "responsavel": "TRATOS CULTURAIS", "inicio": "2026-08-20", "fim": "2026-12-15", "duracao": 84, "percReal": 26.0, "fases": [{"nome": "CONTRATO", "inicio": "2026-08-20", "fim": "2026-08-31", "duracao": 8, "percReal": 100.0, "tarefasTotal": 6, "tarefasConcluidas": 6}, {"nome": "PLANEJAR", "inicio": "2026-08-20", "fim": "2026-10-09", "duracao": 37, "percReal": 26.0, "tarefasTotal": 7, "tarefasConcluidas": 2}, {"nome": "EXECUTAR", "inicio": "2026-10-12", "fim": "2026-11-20", "duracao": 30, "percReal": 0.0, "tarefasTotal": 2, "tarefasConcluidas": 0}, {"nome": "AGIR", "inicio": "2026-11-23", "fim": "2026-12-15", "duracao": 17, "percReal": 0.0, "tarefasTotal": 2, "tarefasConcluidas": 0}]}, {"nome": "TRATOS CULTURAIS - REDUÇÃO DA QUILOMETRAGEM NO TRANSPORTE DE CALDA PRONTA (Guilherme e Elivelton)", "tipo": "LEAN MANUFACTURING", "responsavel": "TRATOS CULTURAIS", "inicio": "2026-08-20", "fim": "2026-12-15", "duracao": 84, "percReal": 19.0, "fases": [{"nome": "CONTRATO", "inicio": "2026-08-20", "fim": "2026-08-31", "duracao": 8, "percReal": 100.0, "tarefasTotal": 6, "tarefasConcluidas": 6}, {"nome": "PLANEJAR", "inicio": "2026-08-20", "fim": "2026-10-09", "duracao": 37, "percReal": 13.0, "tarefasTotal": 7, "tarefasConcluidas": 0}, {"nome": "EXECUTAR", "inicio": "2026-10-12", "fim": "2026-11-20", "duracao": 30, "percReal": 0.0, "tarefasTotal": 2, "tarefasConcluidas": 0}, {"nome": "AGIR", "inicio": "2026-11-23", "fim": "2026-12-15", "duracao": 17, "percReal": 0.0, "tarefasTotal": 2, "tarefasConcluidas": 0}]}];
 // ===DADOS_AGRICOLA_FIM===
 
-// Mescla as duas unidades num único array, marcando a unidade de origem
-// em cada projeto (ainda dá pra filtrar por unidade dentro da aba).
+// ===DADOS_SDCA_AGRICOLA_INICIO===
+const projetosSdcaAgricola = [{"nome": "PLANTIO MECANIZADO", "tipo": "SDCA", "responsavel": "", "inicio": "2026-01-19", "fim": "2026-04-10", "duracao": 60, "percReal": 100.0, "fases": [{"nome": "Revisar Indicadores/MID", "inicio": "2026-01-19", "fim": "2026-02-06", "duracao": 15, "percReal": 100.0, "tarefasTotal": 1, "tarefasConcluidas": 1}, {"nome": "Revisar Árvore de Indicadores", "inicio": "2026-01-19", "fim": "2026-02-06", "duracao": 15, "percReal": 100.0, "tarefasTotal": 1, "tarefasConcluidas": 1}, {"nome": "Revisar PTP", "inicio": "2026-01-19", "fim": "2026-02-06", "duracao": 15, "percReal": 100.0, "tarefasTotal": 1, "tarefasConcluidas": 1}, {"nome": "Criar/Revisar IT's de Plantio", "inicio": "2026-02-09", "fim": "2026-04-03", "duracao": 40, "percReal": 100.0, "tarefasTotal": 1, "tarefasConcluidas": 1}, {"nome": "Planejamento do TPT", "inicio": "2026-02-16", "fim": "2026-03-06", "duracao": 15, "percReal": 100.0, "tarefasTotal": 1, "tarefasConcluidas": 1}, {"nome": "Planejamento do DTO", "inicio": "2026-02-16", "fim": "2026-03-06", "duracao": 15, "percReal": 100.0, "tarefasTotal": 1, "tarefasConcluidas": 1}, {"nome": "Sistematizar o preenchimento dos quadros de gestão à vista", "inicio": "2026-02-16", "fim": "2026-03-06", "duracao": 15, "percReal": 100.0, "tarefasTotal": 1, "tarefasConcluidas": 1}, {"nome": "Treinar Ritos de DDD", "inicio": "2026-02-23", "fim": "2026-03-13", "duracao": 15, "percReal": 100.0, "tarefasTotal": 1, "tarefasConcluidas": 1}, {"nome": "Implantar DTO", "inicio": "2026-03-02", "fim": "2026-03-20", "duracao": 15, "percReal": 100.0, "tarefasTotal": 1, "tarefasConcluidas": 1}, {"nome": "Definir Anomalias Para Indicadores Priorizados", "inicio": "2026-03-02", "fim": "2026-03-20", "duracao": 15, "percReal": 100.0, "tarefasTotal": 1, "tarefasConcluidas": 1}, {"nome": "Criar Gatilhos para anomalias", "inicio": "2026-03-02", "fim": "2026-03-20", "duracao": 15, "percReal": 100.0, "tarefasTotal": 1, "tarefasConcluidas": 1}, {"nome": "Desenvolvimento de FCA", "inicio": "2026-03-09", "fim": "2026-04-10", "duracao": 25, "percReal": 100.0, "tarefasTotal": 1, "tarefasConcluidas": 1}, {"nome": "Treinamento em RTA", "inicio": "2026-03-11", "fim": "2026-04-07", "duracao": 20, "percReal": 100.0, "tarefasTotal": 1, "tarefasConcluidas": 1}, {"nome": "Acompanhar Indicadores, Executar RTA", "inicio": "2026-03-11", "fim": "2026-04-07", "duracao": 20, "percReal": 100.0, "tarefasTotal": 1, "tarefasConcluidas": 1}]}, {"nome": "VINHAÇA LOCALIZADA", "tipo": "SDCA", "responsavel": "", "inicio": "2026-02-05", "fim": "2026-05-29", "duracao": 82, "percReal": 100.0, "fases": [{"nome": "Desenvolvimento de FCA", "inicio": "2026-02-05", "fim": "2026-03-11", "duracao": 25, "percReal": 100.0, "tarefasTotal": 1, "tarefasConcluidas": 1}, {"nome": "Revisar a sistemática de apuração dos dados dos indicadores", "inicio": "2026-02-09", "fim": "2026-03-06", "duracao": 20, "percReal": 100.0, "tarefasTotal": 1, "tarefasConcluidas": 1}, {"nome": "Revisar documentos e ritos (Rodar em safra para amadurecimento)", "inicio": "2026-04-06", "fim": "2026-05-29", "duracao": 40, "percReal": 100.0, "tarefasTotal": 1, "tarefasConcluidas": 1}]}, {"nome": "VINHAÇA ASPERSÃO", "tipo": "SDCA", "responsavel": "", "inicio": "2026-01-19", "fim": "2026-05-01", "duracao": 75, "percReal": 76.0, "fases": [{"nome": "Revisar Fluxograma", "inicio": "2026-01-19", "fim": "2026-01-30", "duracao": 10, "percReal": 100.0, "tarefasTotal": 1, "tarefasConcluidas": 1}, {"nome": "Criar IT's", "inicio": "2026-01-19", "fim": "2026-02-27", "duracao": 30, "percReal": 100.0, "tarefasTotal": 1, "tarefasConcluidas": 1}, {"nome": "Revisar Árvore de Indicadores", "inicio": "2026-01-19", "fim": "2026-02-13", "duracao": 20, "percReal": 100.0, "tarefasTotal": 1, "tarefasConcluidas": 1}, {"nome": "Revisar Indicadores/MID", "inicio": "2026-01-19", "fim": "2026-02-20", "duracao": 25, "percReal": 100.0, "tarefasTotal": 1, "tarefasConcluidas": 1}, {"nome": "Criar PTP", "inicio": "2026-01-26", "fim": "2026-02-27", "duracao": 25, "percReal": 100.0, "tarefasTotal": 1, "tarefasConcluidas": 1}, {"nome": "Planejamento do TPT", "inicio": "2026-02-09", "fim": "2026-02-27", "duracao": 15, "percReal": 100.0, "tarefasTotal": 1, "tarefasConcluidas": 1}, {"nome": "Planejamento do DTO", "inicio": "2026-02-09", "fim": "2026-02-27", "duracao": 15, "percReal": 100.0, "tarefasTotal": 1, "tarefasConcluidas": 1}, {"nome": "Sistematizar o Preenchimento dos Quadros de Gestão à Vista", "inicio": "2026-02-09", "fim": "2026-02-27", "duracao": 15, "percReal": 70.0, "tarefasTotal": 1, "tarefasConcluidas": 0}, {"nome": "Instalar os quadros de gestão", "inicio": "2026-03-02", "fim": "2026-03-20", "duracao": 15, "percReal": 100.0, "tarefasTotal": 1, "tarefasConcluidas": 1}, {"nome": "Treinar Ritos de DDD e Alinhamento", "inicio": "2026-04-06", "fim": "2026-04-24", "duracao": 15, "percReal": 0.0, "tarefasTotal": 1, "tarefasConcluidas": 0}, {"nome": "Desenvolvimento de FCA", "inicio": "2026-03-30", "fim": "2026-05-01", "duracao": 25, "percReal": 100.0, "tarefasTotal": 1, "tarefasConcluidas": 1}, {"nome": "Treinamento em RTA", "inicio": "2026-03-30", "fim": "2026-04-24", "duracao": 20, "percReal": 100.0, "tarefasTotal": 1, "tarefasConcluidas": 1}, {"nome": "Implantar DTO", "inicio": "2026-04-06", "fim": "2026-04-24", "duracao": 15, "percReal": 100.0, "tarefasTotal": 1, "tarefasConcluidas": 1}, {"nome": "Definir Anomalias Para Indicadores Priorizados", "inicio": "2026-04-06", "fim": "2026-04-24", "duracao": 15, "percReal": 0.0, "tarefasTotal": 1, "tarefasConcluidas": 0}, {"nome": "Criar Gatilhos para anomalias", "inicio": "2026-04-06", "fim": "2026-04-24", "duracao": 15, "percReal": 0.0, "tarefasTotal": 1, "tarefasConcluidas": 0}, {"nome": "Acompanhar Indicadores,  Executar RTA", "inicio": "2026-04-06", "fim": "2026-05-01", "duracao": 20, "percReal": 0.0, "tarefasTotal": 1, "tarefasConcluidas": 0}]}, {"nome": "PROGRAMAÇÃO DE TRATOS", "tipo": "SDCA", "responsavel": "", "inicio": "2026-01-26", "fim": "2026-05-22", "duracao": 85, "percReal": 100.0, "fases": [{"nome": "Atualizar MID para todas as áreas com novos indicadores", "inicio": "2026-01-26", "fim": "2026-03-20", "duracao": 40, "percReal": 100.0, "tarefasTotal": 1, "tarefasConcluidas": 1}, {"nome": "Revisar Árvore de indicadores com novos indicadores", "inicio": "2026-01-26", "fim": "2026-03-20", "duracao": 40, "percReal": 100.0, "tarefasTotal": 1, "tarefasConcluidas": 1}, {"nome": "Finalizar IT de Programação", "inicio": "2026-01-26", "fim": "2026-04-30", "duracao": 69, "percReal": 100.0, "tarefasTotal": 1, "tarefasConcluidas": 1}, {"nome": "Planejar TPT", "inicio": "2026-02-02", "fim": "2026-02-10", "duracao": 7, "percReal": 100.0, "tarefasTotal": 1, "tarefasConcluidas": 1}, {"nome": "Planejar DTO", "inicio": "2026-02-02", "fim": "2026-02-10", "duracao": 7, "percReal": 100.0, "tarefasTotal": 1, "tarefasConcluidas": 1}, {"nome": "Acompanhar Treinamento da IT e Realização do DTO", "inicio": "2026-02-10", "fim": "2026-03-02", "duracao": 15, "percReal": 100.0, "tarefasTotal": 1, "tarefasConcluidas": 1}, {"nome": "Consolidar Indicadores para Plantio e  (Algoritmo).", "inicio": "2026-02-25", "fim": "2026-03-24", "duracao": 20, "percReal": 100.0, "tarefasTotal": 1, "tarefasConcluidas": 1}, {"nome": "Sistematizar a geração dos indicadores e divulgação (gestão à vista)", "inicio": "2026-02-25", "fim": "2026-03-17", "duracao": 15, "percReal": 100.0, "tarefasTotal": 1, "tarefasConcluidas": 1}, {"nome": "Implantar Rito Semanal de Alinhamento Coordenador/Gerente", "inicio": "2026-02-23", "fim": "2026-03-24", "duracao": 22, "percReal": 100.0, "tarefasTotal": 1, "tarefasConcluidas": 1}, {"nome": "Identificar Anomalias Para Indicadores Priorizados", "inicio": "2026-03-24", "fim": "2026-04-13", "duracao": 15, "percReal": 100.0, "tarefasTotal": 1, "tarefasConcluidas": 1}, {"nome": "Definir Gatilhos para anomalias", "inicio": "2026-03-24", "fim": "2026-04-13", "duracao": 15, "percReal": 100.0, "tarefasTotal": 1, "tarefasConcluidas": 1}, {"nome": "Iniciar Árvore de decisões", "inicio": "2026-03-24", "fim": "2026-05-04", "duracao": 30, "percReal": 100.0, "tarefasTotal": 1, "tarefasConcluidas": 1}, {"nome": "Treinar RTA", "inicio": "2026-04-13", "fim": "2026-05-08", "duracao": 20, "percReal": 100.0, "tarefasTotal": 1, "tarefasConcluidas": 1}, {"nome": "Executar RTA", "inicio": "2026-04-13", "fim": "2026-05-22", "duracao": 30, "percReal": 100.0, "tarefasTotal": 1, "tarefasConcluidas": 1}]}, {"nome": "COA", "tipo": "SDCA", "responsavel": "", "inicio": "2026-01-26", "fim": "2026-04-09", "duracao": 54, "percReal": 100.0, "fases": [{"nome": "FCA - ÁRVORE DE DECISÕES - Melhorar árvore com decisões para incendios", "inicio": "2026-01-26", "fim": "2026-03-06", "duracao": 30, "percReal": 100.0, "tarefasTotal": 1, "tarefasConcluidas": 1}, {"nome": "Indicador Eficiencia Operacional Logísitica (EOL)", "inicio": "2026-02-09", "fim": "2026-04-03", "duracao": 40, "percReal": 100.0, "tarefasTotal": 1, "tarefasConcluidas": 1}, {"nome": "Definir gatilhos para EOL", "inicio": "2026-02-16", "fim": "2026-04-03", "duracao": 35, "percReal": 100.0, "tarefasTotal": 1, "tarefasConcluidas": 1}, {"nome": "Treinamento de FCA", "inicio": "2026-02-23", "fim": "2026-04-03", "duracao": 30, "percReal": 100.0, "tarefasTotal": 1, "tarefasConcluidas": 1}, {"nome": "Treinamento em RTA", "inicio": "2026-03-09", "fim": "2026-03-27", "duracao": 15, "percReal": 100.0, "tarefasTotal": 1, "tarefasConcluidas": 1}, {"nome": "Acompanhar Indicadores,  Executar RTA", "inicio": "2026-03-20", "fim": "2026-04-09", "duracao": 15, "percReal": 100.0, "tarefasTotal": 1, "tarefasConcluidas": 1}]}, {"nome": "COLHEITA", "tipo": "SDCA", "responsavel": "", "inicio": "2026-03-06", "fim": "2026-04-06", "duracao": 22, "percReal": 100.0, "fases": [{"nome": "Reforço nos RTA's. Treinamento Atualizado", "inicio": "2026-03-06", "fim": "2026-04-06", "duracao": 22, "percReal": 100.0, "tarefasTotal": 1, "tarefasConcluidas": 1}]}, {"nome": "HERBICIDA", "tipo": "SDCA", "responsavel": "", "inicio": "2026-07-14", "fim": "2026-10-23", "duracao": 74, "percReal": 28.0, "fases": [{"nome": "CRIAR SIPOC", "inicio": "2026-07-15", "fim": "2026-07-28", "duracao": 10, "percReal": 100.0, "tarefasTotal": 1, "tarefasConcluidas": 1}, {"nome": "Revisar Fluxograma", "inicio": "2026-07-15", "fim": "2026-07-22", "duracao": 6, "percReal": 100.0, "tarefasTotal": 1, "tarefasConcluidas": 1}, {"nome": "Criar IT's", "inicio": "2026-07-15", "fim": "2026-08-25", "duracao": 30, "percReal": 0.0, "tarefasTotal": 1, "tarefasConcluidas": 0}, {"nome": "Criar Árvore de Indicadores", "inicio": "2026-07-15", "fim": "2026-09-02", "duracao": 36, "percReal": 100.0, "tarefasTotal": 1, "tarefasConcluidas": 1}, {"nome": "Criar Indicadores/MID", "inicio": "2026-08-27", "fim": "2026-09-04", "duracao": 7, "percReal": 100.0, "tarefasTotal": 1, "tarefasConcluidas": 1}, {"nome": "Criar PTP", "inicio": "2026-09-11", "fim": "2026-09-18", "duracao": 6, "percReal": 100.0, "tarefasTotal": 1, "tarefasConcluidas": 1}, {"nome": "Planejamento  e treinamento do TPT", "inicio": "2026-07-14", "fim": "2026-09-01", "duracao": 36, "percReal": 0.0, "tarefasTotal": 1, "tarefasConcluidas": 0}, {"nome": "Planejamento do DTO", "inicio": "2026-07-14", "fim": "2026-09-01", "duracao": 36, "percReal": 0.0, "tarefasTotal": 1, "tarefasConcluidas": 0}, {"nome": "Sistematizar o Preenchimento dos Quadros de Gestão à Vista", "inicio": "2026-09-07", "fim": "2026-10-02", "duracao": 20, "percReal": 0.0, "tarefasTotal": 1, "tarefasConcluidas": 0}, {"nome": "Instalar os quadros de gestão", "inicio": "2026-09-25", "fim": "2026-10-02", "duracao": 6, "percReal": 0.0, "tarefasTotal": 1, "tarefasConcluidas": 0}, {"nome": "Treinar Ritos de DDD e Alinhamento", "inicio": "2026-10-05", "fim": "2026-10-09", "duracao": 5, "percReal": 0.0, "tarefasTotal": 1, "tarefasConcluidas": 0}, {"nome": "Desenvolvimento de FCA", "inicio": "2026-09-11", "fim": "2026-09-18", "duracao": 6, "percReal": 0.0, "tarefasTotal": 1, "tarefasConcluidas": 0}, {"nome": "Treinamento em RTA", "inicio": "2026-10-05", "fim": "2026-10-09", "duracao": 5, "percReal": 0.0, "tarefasTotal": 1, "tarefasConcluidas": 0}, {"nome": "Implantar DTO", "inicio": "2026-09-10", "fim": "2026-09-18", "duracao": 7, "percReal": 0.0, "tarefasTotal": 1, "tarefasConcluidas": 0}, {"nome": "Definir Anomalias Para Indicadores Priorizados", "inicio": "2026-08-27", "fim": "2026-09-04", "duracao": 7, "percReal": 0.0, "tarefasTotal": 1, "tarefasConcluidas": 0}, {"nome": "Criar Gatilhos para anomalias", "inicio": "2026-08-27", "fim": "2026-09-04", "duracao": 7, "percReal": 0.0, "tarefasTotal": 1, "tarefasConcluidas": 0}, {"nome": "Acompanhar Indicadores,  Executar RTA", "inicio": "2026-10-19", "fim": "2026-10-23", "duracao": 5, "percReal": 0.0, "tarefasTotal": 1, "tarefasConcluidas": 0}]}, {"nome": "ADUBO LÍQUIDO", "tipo": "SDCA", "responsavel": "", "inicio": "2026-07-23", "fim": "2026-10-23", "duracao": 67, "percReal": 100.0, "fases": [{"nome": "Revisar SIPOC", "inicio": "2026-07-23", "fim": "2026-07-24", "duracao": 2, "percReal": 100.0, "tarefasTotal": 1, "tarefasConcluidas": 1}, {"nome": "Criar Fluxograma", "inicio": "2026-07-23", "fim": "2026-07-30", "duracao": 6, "percReal": 100.0, "tarefasTotal": 1, "tarefasConcluidas": 1}, {"nome": "Criar IT's", "inicio": "2026-07-31", "fim": "2026-08-31", "duracao": 22, "percReal": 100.0, "tarefasTotal": 1, "tarefasConcluidas": 1}, {"nome": "Revisar Árvore de Indicadores", "inicio": "2026-07-29", "fim": "2026-08-11", "duracao": 10, "percReal": 100.0, "tarefasTotal": 1, "tarefasConcluidas": 1}, {"nome": "Revisar MID/ Criar Indicadores", "inicio": "2026-07-29", "fim": "2026-08-11", "duracao": 10, "percReal": 100.0, "tarefasTotal": 1, "tarefasConcluidas": 1}, {"nome": "Revisar PTP", "inicio": "2026-07-29", "fim": "2026-08-12", "duracao": 11, "percReal": 100.0, "tarefasTotal": 1, "tarefasConcluidas": 1}, {"nome": "Planejamento  e treinamento do TPT", "inicio": "2026-09-01", "fim": "2026-09-08", "duracao": 6, "percReal": 100.0, "tarefasTotal": 1, "tarefasConcluidas": 1}, {"nome": "Planejamento do DTO", "inicio": "2026-09-01", "fim": "2026-09-03", "duracao": 3, "percReal": 100.0, "tarefasTotal": 1, "tarefasConcluidas": 1}, {"nome": "Sistematizar o Preenchimento dos Quadros de Gestão à Vista", "inicio": "2026-08-10", "fim": "2026-08-26", "duracao": 13, "percReal": 100.0, "tarefasTotal": 1, "tarefasConcluidas": 1}, {"nome": "Instalar os quadros de gestão", "inicio": "2026-08-31", "fim": "2026-09-07", "duracao": 6, "percReal": 100.0, "tarefasTotal": 1, "tarefasConcluidas": 1}, {"nome": "Treinar Ritos de DDD e Alinhamento", "inicio": "2026-09-08", "fim": "2026-09-15", "duracao": 6, "percReal": 100.0, "tarefasTotal": 1, "tarefasConcluidas": 1}, {"nome": "Desenvolvimento de FCA", "inicio": "2026-08-12", "fim": "2026-08-19", "duracao": 6, "percReal": 100.0, "tarefasTotal": 1, "tarefasConcluidas": 1}, {"nome": "Treinamento em RTA", "inicio": "2026-09-21", "fim": "2026-09-25", "duracao": 5, "percReal": 100.0, "tarefasTotal": 1, "tarefasConcluidas": 1}, {"nome": "Implantar DTO", "inicio": "2026-08-10", "fim": "2026-08-31", "duracao": 16, "percReal": 100.0, "tarefasTotal": 1, "tarefasConcluidas": 1}, {"nome": "Definir Anomalias Para Indicadores Priorizados", "inicio": "2026-07-29", "fim": "2026-08-06", "duracao": 7, "percReal": 100.0, "tarefasTotal": 1, "tarefasConcluidas": 1}, {"nome": "Criar Gatilhos para anomalias", "inicio": "2026-07-29", "fim": "2026-08-06", "duracao": 7, "percReal": 100.0, "tarefasTotal": 1, "tarefasConcluidas": 1}, {"nome": "Acompanhar Indicadores,  Executar RTA", "inicio": "2026-10-19", "fim": "2026-10-23", "duracao": 5, "percReal": 100.0, "tarefasTotal": 1, "tarefasConcluidas": 1}]}, {"nome": "QUEBRA LOMBO", "tipo": "SDCA", "responsavel": "", "inicio": "2026-07-23", "fim": "2026-10-23", "duracao": 67, "percReal": 27.0, "fases": [{"nome": "Criar SIPOC", "inicio": "2026-07-23", "fim": "2026-07-30", "duracao": 6, "percReal": 100.0, "tarefasTotal": 1, "tarefasConcluidas": 1}, {"nome": "Criar Fluxograma", "inicio": "2026-07-23", "fim": "2026-07-30", "duracao": 6, "percReal": 100.0, "tarefasTotal": 1, "tarefasConcluidas": 1}, {"nome": "Criar IT's", "inicio": "2026-07-31", "fim": "2026-08-31", "duracao": 22, "percReal": 0.0, "tarefasTotal": 1, "tarefasConcluidas": 0}, {"nome": "Criar Árvore de Indicadores", "inicio": "2026-08-03", "fim": "2026-08-17", "duracao": 11, "percReal": 100.0, "tarefasTotal": 1, "tarefasConcluidas": 1}, {"nome": "Criar Indicadores/MID", "inicio": "2026-08-03", "fim": "2026-08-21", "duracao": 15, "percReal": 100.0, "tarefasTotal": 1, "tarefasConcluidas": 1}, {"nome": "Criar PTP", "inicio": "2026-08-18", "fim": "2026-08-25", "duracao": 6, "percReal": 100.0, "tarefasTotal": 1, "tarefasConcluidas": 1}, {"nome": "Planejamento  e treinamento do TPT", "inicio": "2026-09-01", "fim": "2026-09-08", "duracao": 6, "percReal": 0.0, "tarefasTotal": 1, "tarefasConcluidas": 0}, {"nome": "Planejamento do DTO", "inicio": "2026-09-01", "fim": "2026-09-08", "duracao": 6, "percReal": 0.0, "tarefasTotal": 1, "tarefasConcluidas": 0}, {"nome": "Sistematizar o Preenchimento dos Quadros de Gestão à Vista", "inicio": "2026-08-10", "fim": "2026-08-24", "duracao": 11, "percReal": 0.0, "tarefasTotal": 1, "tarefasConcluidas": 0}, {"nome": "Instalar os quadros de gestão", "inicio": "2026-08-31", "fim": "2026-09-07", "duracao": 6, "percReal": 0.0, "tarefasTotal": 1, "tarefasConcluidas": 0}, {"nome": "Treinar Ritos de DDD e Alinhamento", "inicio": "2026-09-08", "fim": "2026-09-15", "duracao": 6, "percReal": 0.0, "tarefasTotal": 1, "tarefasConcluidas": 0}, {"nome": "Desenvolvimento de FCA", "inicio": "2026-08-12", "fim": "2026-08-19", "duracao": 6, "percReal": 0.0, "tarefasTotal": 1, "tarefasConcluidas": 0}, {"nome": "Treinamento em RTA", "inicio": "2026-09-21", "fim": "2026-09-25", "duracao": 5, "percReal": 0.0, "tarefasTotal": 1, "tarefasConcluidas": 0}, {"nome": "Implantar DTO", "inicio": "2026-08-10", "fim": "2026-08-31", "duracao": 16, "percReal": 0.0, "tarefasTotal": 1, "tarefasConcluidas": 0}, {"nome": "Definir Anomalias Para Indicadores Priorizados", "inicio": "2026-08-03", "fim": "2026-08-21", "duracao": 15, "percReal": 0.0, "tarefasTotal": 1, "tarefasConcluidas": 0}, {"nome": "Criar Gatilhos para anomalias", "inicio": "2026-08-03", "fim": "2026-08-21", "duracao": 15, "percReal": 0.0, "tarefasTotal": 1, "tarefasConcluidas": 0}, {"nome": "Acompanhar Indicadores,  Executar RTA", "inicio": "2026-10-19", "fim": "2026-10-23", "duracao": 5, "percReal": 0.0, "tarefasTotal": 1, "tarefasConcluidas": 0}]}];
+// ===DADOS_SDCA_AGRICOLA_FIM===
+
+// ===DADOS_SDCA_MAN_AUTOMOTIVA_INICIO===
+const projetosSdcaManAutomotiva = [];
+// ===DADOS_SDCA_MAN_AUTOMOTIVA_FIM===
+
+// ===DADOS_SDCA_INDUSTRIA_INICIO===
+const projetosSdcaIndustria = [];
+// ===DADOS_SDCA_INDUSTRIA_FIM===
+
+// ===DADOS_SDCA_MAN_INDUSTRIAL_INICIO===
+const projetosSdcaManIndustrial = [];
+// ===DADOS_SDCA_MAN_INDUSTRIAL_FIM===
+
+// ===DADOS_SDCA_APOIO_INICIO===
+const projetosSdcaApoio = [{"nome": "Almoxarifado", "tipo": "SDCA", "responsavel": "", "inicio": "2026-03-30", "fim": "2026-08-31", "duracao": 155, "percReal": 22.0, "fases": [{"nome": "Criar SIPOC", "inicio": "2026-03-30", "fim": "2026-04-10", "duracao": 12, "percReal": 100.0, "tarefasTotal": 1, "tarefasConcluidas": 1}, {"nome": "Criar Macrofluxo", "inicio": "2026-03-30", "fim": "2026-04-10", "duracao": 12, "percReal": 100.0, "tarefasTotal": 1, "tarefasConcluidas": 1}, {"nome": "Criar Árvore de Indicadores", "inicio": "2026-04-10", "fim": "2026-05-11", "duracao": 32, "percReal": 100.0, "tarefasTotal": 1, "tarefasConcluidas": 1}, {"nome": "Criar MID - Mapa de Indicadores de Desempenho", "inicio": "2026-05-11", "fim": "2026-05-22", "duracao": 12, "percReal": 100.0, "tarefasTotal": 1, "tarefasConcluidas": 1}, {"nome": "Criar Gatilhos para Anomalias", "inicio": "2026-07-01", "fim": "2026-07-17", "duracao": 17, "percReal": 100.0, "tarefasTotal": 1, "tarefasConcluidas": 1}, {"nome": "Criar Fluxograma", "inicio": "2026-05-11", "fim": "2026-05-11", "duracao": 1, "percReal": 100.0, "tarefasTotal": 1, "tarefasConcluidas": 1}, {"nome": "Definir Tarefas Críticas", "inicio": "2026-05-11", "fim": "2026-05-11", "duracao": 1, "percReal": 100.0, "tarefasTotal": 1, "tarefasConcluidas": 1}, {"nome": "Planejamento do DTO", "inicio": "2026-07-01", "fim": "2026-07-10", "duracao": 10, "percReal": 0.0, "tarefasTotal": 1, "tarefasConcluidas": 0}, {"nome": "Treinar na Realização do DTO", "inicio": "2026-07-13", "fim": "2026-07-24", "duracao": 12, "percReal": 0.0, "tarefasTotal": 1, "tarefasConcluidas": 0}, {"nome": "Implantar e acompanhar DTO", "inicio": "2026-07-13", "fim": "2026-07-31", "duracao": 19, "percReal": 0.0, "tarefasTotal": 1, "tarefasConcluidas": 0}, {"nome": "Sistematizar o quando de gestão à vista", "inicio": "2026-06-01", "fim": "2026-06-30", "duracao": 30, "percReal": 0.0, "tarefasTotal": 1, "tarefasConcluidas": 0}, {"nome": "Treinar Ritos de DDD e Alinhamento", "inicio": "2026-05-25", "fim": "2026-06-26", "duracao": 33, "percReal": 0.0, "tarefasTotal": 1, "tarefasConcluidas": 0}, {"nome": "Treinar na Realização do TPT", "inicio": "2026-06-01", "fim": "2026-06-12", "duracao": 12, "percReal": 0.0, "tarefasTotal": 1, "tarefasConcluidas": 0}, {"nome": "Implantar e acompanhar TPT", "inicio": "2026-06-15", "fim": "2026-06-30", "duracao": 16, "percReal": 0.0, "tarefasTotal": 1, "tarefasConcluidas": 0}, {"nome": "Definir Anomalias para Indicadores Priorizados", "inicio": "2026-07-01", "fim": "2026-07-17", "duracao": 17, "percReal": 0.0, "tarefasTotal": 1, "tarefasConcluidas": 0}, {"nome": "Criar IT´s", "inicio": "2026-05-04", "fim": "2026-07-31", "duracao": 89, "percReal": 0.0, "tarefasTotal": 1, "tarefasConcluidas": 0}, {"nome": "Planejamento do TPT", "inicio": "2026-05-18", "fim": "2026-05-29", "duracao": 12, "percReal": 0.0, "tarefasTotal": 1, "tarefasConcluidas": 0}, {"nome": "Desenvolvimento de FCA", "inicio": "2026-07-13", "fim": "2026-07-24", "duracao": 12, "percReal": 0.0, "tarefasTotal": 1, "tarefasConcluidas": 0}, {"nome": "Treinamento em RTA", "inicio": "2026-07-20", "fim": "2026-07-31", "duracao": 12, "percReal": 0.0, "tarefasTotal": 1, "tarefasConcluidas": 0}, {"nome": "Acompanhar Indicadores e Executar RTA", "inicio": "2026-08-03", "fim": "2026-08-31", "duracao": 29, "percReal": 0.0, "tarefasTotal": 1, "tarefasConcluidas": 0}]}];
+// ===DADOS_SDCA_APOIO_FIM===
+
+// Mescla Clementina e Queiroz num único array, marcando a unidade de
+// origem em cada projeto (ainda dá pra filtrar por unidade dentro da aba).
 const projetosIndustria = [
   ...projetosClementina.map(p=>({...p, unidade:'Clementina'})),
   ...projetosQueiroz.map(p=>({...p, unidade:'Queiroz'}))
 ];
 
-// Abas por categoria. A ordem deste objeto é a ordem das abas na tela.
-// Futuras categorias entram aqui do mesmo jeito, como mais uma chave.
+// Abas por categoria dentro de cada metodologia. A ordem destes objetos
+// é a ordem das abas na tela. Futuras categorias entram aqui do mesmo
+// jeito, como mais uma chave.
 const projetosAgrTab = projetosAgricola.map(p=>({...p, unidade:'Agrícola'}));
 const projetosManIndTab = projetosManutencaoIndustrial.map(p=>({...p, unidade:'Manutenção Industrial'}));
 const projetosManAgrTab = projetosManutencaoAgricola.map(p=>({...p, unidade:'Manutenção Agrícola'}));
 
-const UNIDADES = {
+const CATEGORIAS_PDCA = {
   "Agrícola": projetosAgrTab,
   "Manutenção Agrícola": projetosManAgrTab,
   "Indústria": projetosIndustria,
   "Manutenção Industrial": projetosManIndTab
 };
-let unidadeAtual = Object.keys(UNIDADES).find(u => UNIDADES[u].length > 0) || "Agrícola";
+
+const projetosSdcaAgrTab = projetosSdcaAgricola.map(p=>({...p, unidade:'Agrícola'}));
+const projetosSdcaManAutomotivaTab = projetosSdcaManAutomotiva.map(p=>({...p, unidade:'Manutenção Automotiva'}));
+const projetosSdcaIndustriaTab = projetosSdcaIndustria.map(p=>({...p, unidade:'Indústria'}));
+const projetosSdcaManIndustrialTab = projetosSdcaManIndustrial.map(p=>({...p, unidade:'Manutenção Industrial'}));
+const projetosSdcaApoioTab = projetosSdcaApoio.map(p=>({...p, unidade:'Apoio'}));
+
+const CATEGORIAS_SDCA = {
+  "Agrícola": projetosSdcaAgrTab,
+  "Manutenção Automotiva": projetosSdcaManAutomotivaTab,
+  "Indústria": projetosSdcaIndustriaTab,
+  "Manutenção Industrial": projetosSdcaManIndustrialTab,
+  "Apoio": projetosSdcaApoioTab
+};
+
+// Duas metodologias na barra lateral. Cada uma tem seu proprio conjunto
+// de abas por categoria (objeto CATEGORIAS_*).
+const METODOLOGIAS = {
+  "Cronograma PDCA / DMAIC": CATEGORIAS_PDCA,
+  "Cronograma SDCA": CATEGORIAS_SDCA
+};
+let metodologiaAtual = Object.keys(METODOLOGIAS).find(
+  m => Object.values(METODOLOGIAS[m]).some(arr => arr.length > 0)
+) || "Cronograma PDCA / DMAIC";
+
+function categoriasAtuais(){ return METODOLOGIAS[metodologiaAtual]; }
+
+let unidadeAtual = Object.keys(categoriasAtuais()).find(u => categoriasAtuais()[u].length > 0)
+  || Object.keys(categoriasAtuais())[0];
 
 const TOLERANCIA = 5; // pontos percentuais de tolerância para considerar "No Prazo"
 
@@ -237,9 +303,36 @@ function statusClasse(status){
 
 const hojeISO = new Date().toISOString().slice(0,10);
 
+function renderSidebar(){
+  const wrap = document.getElementById('sidebarNav');
+  wrap.innerHTML = Object.keys(METODOLOGIAS).map(m=>
+    `<button class="sidebar-btn ${m===metodologiaAtual?'active':''}" onclick="trocarMetodologia('${m}')">📅 ${m}</button>`
+  ).join('');
+
+  const ehSdca = metodologiaAtual === "Cronograma SDCA";
+  document.getElementById('tituloMetodologia').textContent = ehSdca ? "Projetos SDCA" : "Projetos Green e Lean";
+  document.getElementById('subtituloMetodologia').textContent = ehSdca
+    ? "% Concluído (real) vs % Esperado pelo cronograma — processos e etapas SDCA"
+    : "% Concluído (real) vs % Esperado pelo cronograma — GreenBelt e Lean Manufacturing";
+  document.getElementById('tituloSecaoFases').textContent = ehSdca
+    ? "Detalhamento por Etapa (SDCA)"
+    : "Detalhamento por Fase (DMAIC / PDCA)";
+  document.getElementById('colunaFase').textContent = ehSdca ? "Etapa" : "Fase";
+}
+
+function trocarMetodologia(m){
+  metodologiaAtual = m;
+  unidadeAtual = Object.keys(categoriasAtuais()).find(u => categoriasAtuais()[u].length > 0)
+    || Object.keys(categoriasAtuais())[0];
+  renderSidebar();
+  renderUnitTabs();
+  popularSelects();
+  render();
+}
+
 function renderUnitTabs(){
   const wrap = document.getElementById('unitTabs');
-  wrap.innerHTML = Object.keys(UNIDADES).map(u=>
+  wrap.innerHTML = Object.keys(categoriasAtuais()).map(u=>
     `<button class="unit-tab ${u===unidadeAtual?'active':''}" onclick="trocarUnidade('${u}')">${u}</button>`
   ).join('');
 }
@@ -264,7 +357,7 @@ function fillSelect(id, values, placeholder){
 const fProjetoFase = document.getElementById('fProjetoFase');
 
 function popularSelects(){
-  const dados = UNIDADES[unidadeAtual];
+  const dados = categoriasAtuais()[unidadeAtual];
   fillSelect('fUnidade', uniq(dados.map(r=>r.unidade)), 'Todas');
   fillSelect('fTipo', uniq(dados.map(r=>r.tipo)), 'Todos');
   fillSelect('fResp', uniq(dados.map(r=>r.responsavel)), 'Todos');
@@ -289,7 +382,7 @@ function resetFilters(){
 }
 
 function getFiltered(){
-  const dados = UNIDADES[unidadeAtual];
+  const dados = categoriasAtuais()[unidadeAtual];
   const fU = document.getElementById('fUnidade').value;
   const fT = document.getElementById('fTipo').value;
   const fR = document.getElementById('fResp').value;
@@ -326,7 +419,7 @@ const corEsperado = '#f7c948';
 const corStatus = {Adiantado:'#00b894', 'No Prazo':'#0984e3', Atrasado:'#e74c3c'};
 
 function render(){
-  const dadosUnidade = UNIDADES[unidadeAtual];
+  const dadosUnidade = categoriasAtuais()[unidadeAtual];
   const emptyMsg = document.getElementById('emptyMsg');
   const mainContent = document.getElementById('mainContent');
 
@@ -426,7 +519,7 @@ function render(){
 }
 
 function renderFases(){
-  const dadosUnidade = UNIDADES[unidadeAtual];
+  const dadosUnidade = categoriasAtuais()[unidadeAtual];
   if(!dadosUnidade || dadosUnidade.length === 0) return;
   const idx = parseInt(fProjetoFase.value || 0);
   const proj = dadosUnidade[idx];
@@ -513,6 +606,7 @@ window.addEventListener('message', (event) => {
 
 document.getElementById('lastUpdate').textContent = 'Atualizado em ' + new Date().toLocaleDateString('pt-BR');
 aplicarTemaSalvo();
+renderSidebar();
 renderUnitTabs();
 popularSelects();
 render();
