@@ -12,13 +12,10 @@
 }
 *{box-sizing:border-box;}
 body{margin:0;font-family:'Segoe UI',Arial,sans-serif;background:linear-gradient(135deg,var(--bg),var(--bg2));color:var(--text);}
-.app-layout{display:flex;min-height:100vh;}
-.sidebar{width:230px;flex-shrink:0;background:var(--card);border-right:1px solid var(--border);padding:24px 16px;display:flex;flex-direction:column;gap:8px;}
-.sidebar-title{color:var(--muted);font-size:11px;text-transform:uppercase;letter-spacing:.6px;margin:0 0 6px 6px;}
-.sidebar-btn{display:flex;align-items:center;gap:10px;background:transparent;border:1px solid transparent;color:var(--text);padding:12px 14px;border-radius:10px;cursor:pointer;font-weight:600;font-size:14px;text-align:left;width:100%;}
-.sidebar-btn:hover{background:var(--card2);}
-.sidebar-btn.active{background:var(--accent);color:#2b2205;}
-.main-area{flex:1;min-width:0;}
+.metodologia-bar{background:var(--card);border-bottom:1px solid var(--border);padding:12px 32px;display:flex;gap:10px;}
+.metodologia-btn{display:flex;align-items:center;gap:8px;background:var(--card2);border:1px solid var(--border);color:var(--text);padding:10px 20px;border-radius:10px;cursor:pointer;font-weight:600;font-size:14px;}
+.metodologia-btn:hover{border-color:var(--accent);}
+.metodologia-btn.active{background:var(--accent);color:#2b2205;border-color:var(--accent);}
 header{padding:22px 32px;background:linear-gradient(90deg,#3d3308,#0f1720);border-bottom:2px solid var(--accent);display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px;}
 header h1{margin:0;font-size:24px;letter-spacing:.5px;}
 header .sub{color:var(--muted);font-size:13px;margin-top:4px;}
@@ -73,8 +70,9 @@ body.light{
   --danger:#e74c3c; --warn:#e67e22; --good:#00997a; --text:#1b2733; --muted:#5f6f7f; --border:#eee0b0;
 }
 body.light header{background:linear-gradient(90deg,#FCCC0A,#fffbea 85%);border-bottom:2px solid #FCCC0A;}
-body.light .sidebar{background:#fff;}
-body.light .sidebar-btn.active{background:var(--accent);}
+body.light .metodologia-bar{background:#fff;}
+body.light .metodologia-btn{background:#faf6e4;}
+body.light .metodologia-btn.active{background:var(--accent);}
 body.light .filters select, body.light .section-title select, body.light .unit-tab{background:#fff;}
 body.light .unit-tab.active{background:var(--accent);}
 body.light .filters input[type=date]{background:#fff;color-scheme:light;}
@@ -83,12 +81,7 @@ body.light .filters input[type=date]{background:#fff;color-scheme:light;}
 </style>
 </head>
 <body>
-<div class="app-layout">
-  <nav class="sidebar">
-    <div class="sidebar-title">Cronograma dos Projetos</div>
-    <div id="sidebarNav"></div>
-  </nav>
-  <div class="main-area">
+<div class="metodologia-bar" id="metodologiaBar"></div>
 <header>
   <div>
     <h1 id="tituloMetodologia">Projetos Green e Lean</h1>
@@ -173,8 +166,6 @@ body.light .filters input[type=date]{background:#fff;color-scheme:light;}
     </div>
   </div>
   <div class="empty-msg" id="emptyMsg" style="display:none;"></div>
-</div>
-  </div>
 </div>
 
 <script>
@@ -303,10 +294,10 @@ function statusClasse(status){
 
 const hojeISO = new Date().toISOString().slice(0,10);
 
-function renderSidebar(){
-  const wrap = document.getElementById('sidebarNav');
+function renderMetodologiaBar(){
+  const wrap = document.getElementById('metodologiaBar');
   wrap.innerHTML = Object.keys(METODOLOGIAS).map(m=>
-    `<button class="sidebar-btn ${m===metodologiaAtual?'active':''}" onclick="trocarMetodologia('${m}')">📅 ${m}</button>`
+    `<button class="metodologia-btn ${m===metodologiaAtual?'active':''}" onclick="trocarMetodologia('${m}')">📅 ${m}</button>`
   ).join('');
 
   const ehSdca = metodologiaAtual === "Cronograma SDCA";
@@ -320,11 +311,12 @@ function renderSidebar(){
   document.getElementById('colunaFase').textContent = ehSdca ? "Etapa" : "Fase";
 }
 
+
 function trocarMetodologia(m){
   metodologiaAtual = m;
   unidadeAtual = Object.keys(categoriasAtuais()).find(u => categoriasAtuais()[u].length > 0)
     || Object.keys(categoriasAtuais())[0];
-  renderSidebar();
+  renderMetodologiaBar();
   renderUnitTabs();
   popularSelects();
   render();
@@ -606,7 +598,7 @@ window.addEventListener('message', (event) => {
 
 document.getElementById('lastUpdate').textContent = 'Atualizado em ' + new Date().toLocaleDateString('pt-BR');
 aplicarTemaSalvo();
-renderSidebar();
+renderMetodologiaBar();
 renderUnitTabs();
 popularSelects();
 render();
