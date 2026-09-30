@@ -1,0 +1,39 @@
+name: Atualizar Planner Dashboard
+
+on:
+  workflow_dispatch:
+
+jobs:
+  atualizar:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout repositório
+        uses: actions/checkout@v4
+
+      - name: Configurar Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Instalar dependências
+        run: pip install pandas openpyxl requests
+
+      - name: Configurar identidade do git
+        run: |
+          git config user.name "GitHub Actions"
+          git config user.email "actions@github.com"
+
+      - name: Atualizar dashboard Planner
+        env:
+          PLANNER_SHAREPOINT_URL: ${{ secrets.PLANNER_SHAREPOINT_URL }}
+        run: python update_planner.py
+
+      - name: Commit e push
+        run: |
+          git add index.html
+          git diff --cached --quiet || git commit -m "Atualizacao automatica Planner - $(date '+%d/%m/%Y %H:%M')"
+          git push
