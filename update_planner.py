@@ -175,7 +175,12 @@ PLANOS_DATAVERSE = {
 # Planos SDCA: plano "PROJETOS | SDCA | <Processo>" = 1 processo; as tarefas de
 # nivel 1 sao as etapas. Chave = processo (maiusculo) -> bloco do index.html.
 PLANOS_SDCA = {
-    "ALMOXARIFADO": "sdca_apoio",
+    "ALMOXARIFADO": ("sdca_apoio", "processo"),
+    "AGRÍCOLA": ("sdca_agricola", "projetos"),
+}
+# Nos planos SDCA com varios projetos, mostra so estes (nomes em maiusculo).
+SDCA_MOSTRAR = {
+    "sdca_agricola": {"ADUBO LÍQUIDO", "HERBICIDA", "QUEBRA LOMBO"},
 }
 
 
@@ -245,6 +250,42 @@ def projeto_sdca(nome_processo, rows):
     }]
 
 
+def projetos_sdca_por_projeto(rows, mostrar=None):
+    """Plano SDCA com varios projetos: nivel 1 = projeto, nivel 2 = etapas."""
+    rows = sorted(rows, key=lambda r: r.get("msdyn_displaysequence") or 0)
+
+    def perc(r):
+        prog = r.get("msdyn_progress")
+        return None if prog is None else round(float(prog) * 100, 1)
+
+    def dur(r):
+        d = r.get("msdyn_duration")
+        return None if d is None else int(round(float(d)))
+
+    projetos, atual = [], None
+    for r in rows:
+        nivel = int(r.get("msdyn_outlinelevel") or 1)
+        nome = str(r.get("msdyn_subject") or "").strip()
+        if nivel == 1:
+            atual = {
+                "nome": nome, "tipo": "SDCA", "responsavel": "",
+                "inicio": _data_iso(r.get("msdyn_start")), "fim": _data_iso(r.get("msdyn_finish")),
+                "duracao": dur(r), "percReal": perc(r), "fases": [],
+            }
+            projetos.append(atual)
+        elif nivel == 2 and atual is not None:
+            p = perc(r)
+            atual["fases"].append({
+                "nome": nome,
+                "inicio": _data_iso(r.get("msdyn_start")), "fim": _data_iso(r.get("msdyn_finish")),
+                "duracao": dur(r), "percReal": p, "tarefasTotal": 1,
+                "tarefasConcluidas": 1 if p is not None and p >= 100 else 0,
+            })
+    if mostrar:
+        projetos = [p for p in projetos if p["nome"].upper() in mostrar]
+    return projetos
+
+
 def baixar_planner_json(url):
     """Baixa o JSON exportado pelo Power Automate (link 'Qualquer pessoa' do
     SharePoint/OneDrive, sem login): 2 requisicoes na mesma sessao."""
@@ -274,9 +315,14 @@ def projetos_por_plano(linhas):
     for nome, rows in por_plano.items():
         if "SDCA" in nome.upper():
             processo = nome.split("|")[-1].strip()
-            chave_sdca = PLANOS_SDCA.get(processo.upper())
-            if chave_sdca:
-                saida.setdefault(chave_sdca, []).extend(projeto_sdca(processo, rows))
+            cfg = PLANOS_SDCA.get(processo.upper())
+            if cfg:
+                chave_sdca, modo = cfg
+                if modo == "processo":
+                    novos = projeto_sdca(processo.title() if processo.isupper() else processo, rows)
+                else:
+                    novos = projetos_sdca_por_projeto(rows, SDCA_MOSTRAR.get(chave_sdca))
+                saida.setdefault(chave_sdca, []).extend(novos)
                 print(f"  {nome}: {len(rows)} tarefas -> processo SDCA {processo!r}")
                 continue
         chave = PLANOS_DATAVERSE.get(nome)
@@ -400,8 +446,10 @@ def main():
         dados_man_agr = por_plano.get("man_agr")
         dados_agricola = por_plano.get("agricola")
         dados_sdca_apoio = por_plano.get("sdca_apoio")
+        dados_sdca_agricola = por_plano.get("sdca_agricola")
     else:
         dados_sdca_apoio = None
+        dados_sdca_agricola = None
         dados_clementina = ler(caminho_clementina, "Clementina")
         dados_queiroz = ler(caminho_queiroz, "Queiroz")
         dados_man_ind = ler(caminho_man_ind, "Manutenção Industrial")
@@ -471,6 +519,14 @@ def main():
             dados_agricola,
         )
 
+    if dados_sdca_agricola:
+        html = substituir_bloco(
+            html,
+            "// ===DADOS_SDCA_AGRICOLA_INICIO===",
+            "// ===DADOS_SDCA_AGRICOLA_FIM===",
+            "projetosSdcaAgricola",
+            dados_sdca_agricola,
+        )
     if dados_sdca_apoio:
         html = substituir_bloco(
             html,
