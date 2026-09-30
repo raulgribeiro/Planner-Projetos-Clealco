@@ -15,6 +15,7 @@ Requisitos (ja vem prontos no seu ambiente Python normal):
 """
 
 import json
+import os
 import re
 import subprocess
 import sys
@@ -39,6 +40,13 @@ ARQUIVO_AGRICOLA = "PROJETOS - PDCA - AGRÍCOLA.xlsx"
 # Pasta onde fica o clone local do repositorio GitHub do dashboard.
 # No seu caso e a MESMA pasta dos Excels (o index.html fica junto).
 PASTA_REPO = PASTA_EXCELS
+
+# No GitHub Actions o link do JSON exportado pelo Power Automate vem por
+# variavel de ambiente; nesse modo o script roda dentro do proprio repo e
+# NAO faz git (o workflow faz o commit/push).
+PLANNER_SHAREPOINT_URL = os.environ.get("PLANNER_SHAREPOINT_URL")
+if PLANNER_SHAREPOINT_URL:
+    PASTA_REPO = Path(__file__).parent.resolve()
 
 # ============================================================
 # Nao precisa mexer daqui pra baixo
@@ -151,6 +159,87 @@ def extrair_projetos(caminho_xlsx):
         nodes[path] = {"nome": nome, "inicio": inicio, "fim": fim, "duracao": duracao, "perc": perc}
         children.setdefault(path[:-1], []).append(path)
 
+    return _projetos_de_nos(nodes, children)
+
+
+# Nome do plano no Planner Premium (Dataverse) -> chave usada no main()
+PLANOS_DATAVERSE = {
+    "PROJETOS | PDCA | IND.CLE": "clementina",
+    "PROJETOS | PDCA | IND.QRZ": "queiroz",
+    "PROJETOS | PDCA | MAN.IND": "man_ind",
+    "PROJETOS | PDCA | MAN.AGR": "man_agr",
+    "PROJETOS | PDCA | AGRÍCOLA": "agricola",
+}
+
+
+def _data_iso(v):
+    return v[:10] if isinstance(v, str) and len(v) >= 10 else None
+
+
+def extrair_projetos_json(rows):
+    """Recebe as linhas da tabela Project Tasks (Dataverse) de UM plano e
+    devolve a mesma estrutura de extrair_projetos(). O numero hierarquico
+    (1, 1.1, 1.1.1 ...) e reconstruido a partir da ordem de exibicao +
+    nivel de indentacao, igual ao export do Planner."""
+    rows = sorted(rows, key=lambda r: r.get("msdyn_displaysequence") or 0)
+    nodes, children, contadores = {}, {}, []
+    for r in rows:
+        nivel = int(r.get("msdyn_outlinelevel") or 1)
+        contadores = contadores[:nivel]
+        while len(contadores) < nivel:
+            contadores.append(0)
+        contadores[nivel - 1] += 1
+        path = tuple(str(c) for c in contadores)
+        dur = r.get("msdyn_duration")
+        prog = r.get("msdyn_progress")
+        nodes[path] = {
+            "nome": str(r.get("msdyn_subject") or "").strip(),
+            "inicio": _data_iso(r.get("msdyn_start")),
+            "fim": _data_iso(r.get("msdyn_finish")),
+            "duracao": None if dur is None else int(round(float(dur))),
+            "perc": None if prog is None else round(float(prog) * 100, 1),
+        }
+        children.setdefault(path[:-1], []).append(path)
+    return _projetos_de_nos(nodes, children)
+
+
+def baixar_planner_json(url):
+    """Baixa o JSON exportado pelo Power Automate (link 'Qualquer pessoa' do
+    SharePoint/OneDrive, sem login): 2 requisicoes na mesma sessao."""
+    import requests
+    s = requests.Session()
+    s.headers["User-Agent"] = "Mozilla/5.0"
+    s.get(url, timeout=60)
+    sep = "&" if "?" in url else "?"
+    resp = s.get(f"{url}{sep}download=1", timeout=180)
+    resp.raise_for_status()
+    try:
+        return resp.json()["value"]
+    except Exception as e:
+        raise RuntimeError(
+            "O download do SharePoint nao retornou o JSON do Planner. O link "
+            f"pode ter expirado/mudado de permissao ({e})."
+        )
+
+
+def projetos_por_plano(linhas):
+    """Agrupa as linhas do Dataverse por plano e devolve {chave: projetos}."""
+    por_plano = {}
+    for r in linhas:
+        nome = r.get("_msdyn_project_value@OData.Community.Display.V1.FormattedValue", "")
+        por_plano.setdefault(nome.strip(), []).append(r)
+    saida = {}
+    for nome, rows in por_plano.items():
+        chave = PLANOS_DATAVERSE.get(nome)
+        if chave is None:
+            print(f"[AVISO] Plano desconhecido ignorado: {nome!r} ({len(rows)} tarefas)")
+            continue
+        saida[chave] = extrair_projetos_json(rows)
+        print(f"  {nome}: {len(rows)} tarefas -> {len(saida[chave])} projeto(s)")
+    return saida
+
+
+def _projetos_de_nos(nodes, children):
     def coletar_fases(candidatos):
         resultado = []
         for cpath in candidatos:
@@ -212,7 +301,7 @@ def substituir_bloco(html, marcador_inicio, marcador_fim, nova_variavel, dados):
         f"const {nova_variavel} = {json.dumps(dados, ensure_ascii=False)};\n"
         f"{marcador_fim}"
     )
-    novo_html, n = padrao.subn(novo_bloco, html)
+    novo_html, n = padrao.subn(lambda _m: novo_bloco, html)  # lambda: preserva barras invertidas do JSON
     if n == 0:
         raise ValueError(
             f"Nao encontrei os marcadores {marcador_inicio} / {marcador_fim} no index.html. "
@@ -249,11 +338,23 @@ def main():
         print(f"  {len(dados)} projeto(s) encontrados.")
         return dados
 
-    dados_clementina = ler(caminho_clementina, "Clementina")
-    dados_queiroz = ler(caminho_queiroz, "Queiroz")
-    dados_man_ind = ler(caminho_man_ind, "Manutenção Industrial")
-    dados_man_agr = ler(caminho_man_agr, "Manutenção Agrícola")
-    dados_agricola = ler(caminho_agricola, "Agrícola")
+    if PLANNER_SHAREPOINT_URL:
+        print("Baixando tarefas do Planner (JSON do Power Automate)...")
+        por_plano = projetos_por_plano(baixar_planner_json(PLANNER_SHAREPOINT_URL))
+        # ignora projetos-modelo que ficam dentro dos planos
+        for chave, lista in por_plano.items():
+            por_plano[chave] = [p for p in lista if not p["nome"].upper().startswith("TEMPLATE")]
+        dados_clementina = por_plano.get("clementina")
+        dados_queiroz = por_plano.get("queiroz")
+        dados_man_ind = por_plano.get("man_ind")
+        dados_man_agr = por_plano.get("man_agr")
+        dados_agricola = por_plano.get("agricola")
+    else:
+        dados_clementina = ler(caminho_clementina, "Clementina")
+        dados_queiroz = ler(caminho_queiroz, "Queiroz")
+        dados_man_ind = ler(caminho_man_ind, "Manutenção Industrial")
+        dados_man_agr = ler(caminho_man_agr, "Manutenção Agrícola")
+        dados_agricola = ler(caminho_agricola, "Agrícola")
 
     if all(d is None for d in (dados_clementina, dados_queiroz, dados_man_ind, dados_man_agr, dados_agricola)):
         print("Nenhum dos Excels foi encontrado. Nada para atualizar. Encerrando.")
@@ -320,6 +421,10 @@ def main():
 
     ARQUIVO_INDEX.write_text(html, encoding="utf-8")
     print(f"index.html atualizado em {ARQUIVO_INDEX}")
+
+    if PLANNER_SHAREPOINT_URL:
+        print("Modo Actions: commit/push fica por conta do workflow.")
+        return
 
     # Publica no GitHub
     if not rodar_git(["git", "add", "index.html"], cwd=PASTA_REPO):
