@@ -169,6 +169,13 @@ PLANOS_DATAVERSE = {
     "PROJETOS | PDCA | MAN.IND": "man_ind",
     "PROJETOS | PDCA | MAN.AGR": "man_agr",
     "PROJETOS | PDCA | AGRÍCOLA": "agricola",
+    "PROJETOS | PDCA | AGRÍCOLA - SEGUNDO SEMESTRE": "agricola",  # somado ao plano Agrícola
+}
+
+# Planos SDCA: plano "PROJETOS | SDCA | <Processo>" = 1 processo; as tarefas de
+# nivel 1 sao as etapas. Chave = processo (maiusculo) -> bloco do index.html.
+PLANOS_SDCA = {
+    "ALMOXARIFADO": "sdca_apoio",
 }
 
 
@@ -203,6 +210,41 @@ def extrair_projetos_json(rows):
     return _projetos_de_nos(nodes, children)
 
 
+def projeto_sdca(nome_processo, rows):
+    """Plano SDCA -> lista com 1 projeto (o processo) e suas etapas (tarefas
+    de nivel 1). % do processo = media das etapas ponderada pela duracao."""
+    from datetime import date
+    rows = sorted(rows, key=lambda r: r.get("msdyn_displaysequence") or 0)
+    etapas = []
+    for r in rows:
+        if int(r.get("msdyn_outlinelevel") or 1) != 1:
+            continue
+        dur = r.get("msdyn_duration")
+        prog = r.get("msdyn_progress")
+        perc = None if prog is None else round(float(prog) * 100, 1)
+        etapas.append({
+            "nome": str(r.get("msdyn_subject") or "").strip(),
+            "inicio": _data_iso(r.get("msdyn_start")), "fim": _data_iso(r.get("msdyn_finish")),
+            "duracao": None if dur is None else int(round(float(dur))),
+            "percReal": perc, "tarefasTotal": 1,
+            "tarefasConcluidas": 1 if perc is not None and perc >= 100 else 0,
+        })
+    if not etapas:
+        return []
+    inicios = [e["inicio"] for e in etapas if e["inicio"]]
+    fins = [e["fim"] for e in etapas if e["fim"]]
+    ini, fim = min(inicios), max(fins)
+    dias = (date.fromisoformat(fim) - date.fromisoformat(ini)).days + 1
+    pesos = [(e["duracao"] or 0) for e in etapas]
+    soma = sum(pesos)
+    perc = sum((e["percReal"] or 0) * w for e, w in zip(etapas, pesos)) / soma if soma else 0
+    return [{
+        "nome": nome_processo, "tipo": "SDCA", "responsavel": "",
+        "inicio": ini, "fim": fim, "duracao": dias,
+        "percReal": float(round(perc)), "fases": etapas,
+    }]
+
+
 def baixar_planner_json(url):
     """Baixa o JSON exportado pelo Power Automate (link 'Qualquer pessoa' do
     SharePoint/OneDrive, sem login): 2 requisicoes na mesma sessao."""
@@ -230,12 +272,20 @@ def projetos_por_plano(linhas):
         por_plano.setdefault(nome.strip(), []).append(r)
     saida = {}
     for nome, rows in por_plano.items():
+        if "SDCA" in nome.upper():
+            processo = nome.split("|")[-1].strip()
+            chave_sdca = PLANOS_SDCA.get(processo.upper())
+            if chave_sdca:
+                saida.setdefault(chave_sdca, []).extend(projeto_sdca(processo, rows))
+                print(f"  {nome}: {len(rows)} tarefas -> processo SDCA {processo!r}")
+                continue
         chave = PLANOS_DATAVERSE.get(nome)
         if chave is None:
             print(f"[AVISO] Plano desconhecido ignorado: {nome!r} ({len(rows)} tarefas)")
             continue
-        saida[chave] = extrair_projetos_json(rows)
-        print(f"  {nome}: {len(rows)} tarefas -> {len(saida[chave])} projeto(s)")
+        novos = extrair_projetos_json(rows)
+        saida.setdefault(chave, []).extend(novos)
+        print(f"  {nome}: {len(rows)} tarefas -> {len(novos)} projeto(s)")
     return saida
 
 
@@ -349,7 +399,9 @@ def main():
         dados_man_ind = por_plano.get("man_ind")
         dados_man_agr = por_plano.get("man_agr")
         dados_agricola = por_plano.get("agricola")
+        dados_sdca_apoio = por_plano.get("sdca_apoio")
     else:
+        dados_sdca_apoio = None
         dados_clementina = ler(caminho_clementina, "Clementina")
         dados_queiroz = ler(caminho_queiroz, "Queiroz")
         dados_man_ind = ler(caminho_man_ind, "Manutenção Industrial")
@@ -417,6 +469,15 @@ def main():
             "// ===DADOS_AGRICOLA_FIM===",
             "projetosAgricola",
             dados_agricola,
+        )
+
+    if dados_sdca_apoio:
+        html = substituir_bloco(
+            html,
+            "// ===DADOS_SDCA_APOIO_INICIO===",
+            "// ===DADOS_SDCA_APOIO_FIM===",
+            "projetosSdcaApoio",
+            dados_sdca_apoio,
         )
 
     ARQUIVO_INDEX.write_text(html, encoding="utf-8")
