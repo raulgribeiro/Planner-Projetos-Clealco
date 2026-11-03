@@ -682,6 +682,7 @@ window.addEventListener('message', (event) => {
   const dados = event.data;
   if(dados && dados.type === 'SET_THEME' && (dados.theme === 'dark' || dados.theme === 'light')){
     const claro = dados.theme === 'light';
+    if(claro === document.body.classList.contains('light')) return; // já está nesse tema: evita redesenhar os gráficos
     localStorage.setItem(CHAVE_TEMA, claro ? 'claro' : 'escuro');
     aplicarTema(claro);
     render();
